@@ -2,14 +2,25 @@
 
 # IdeaHub
 
-一个专注于创意视频的轻量平台：发现、上传、管理与互动一体化。前端基于 React + Vite，后端使用 Supabase 提供鉴权、数据库、存储与 RPC 能力。
+一个专注于创意视频的轻量平台：发现、上传、管理与互动一体化。
+
+前端基于 React + Vite，后端使用 Supabase 提供鉴权、数据库、存储与 RPC 能力。
 
 ## 功能特性
-- 发现页：支持搜索、时间范围筛选（今天/本周/本月）、排序（最新/热门/点赞数）
-- 上传页：拖拽/点击上传视频与封面，自动读取视频时长与封面宽高比，上传进度提示
-- 我的视频：结果统计、表格视图、编辑与删除操作、即时本地更新
-- 详情页：播放器、作者信息、标签、点赞、评论列表与输入，浏览计数
-- 交互体验：动画过渡（framer-motion）、消息提示（react-hot-toast）、懒加载与骨架屏
+- 创作前-创意模块：支持搜索、时间范围筛选（今天/本周/本月）、排序（最新/热门/点赞数）
+- 创作中-发布模块：拖拽/点击上传视频与封面，自动读取视频时长与封面宽高比
+- 创作后-管理模块：编辑与删除操作、即时更新
+- 视频详情页：播放器、作者信息、标签、点赞、评论列表与输入，浏览计数
+- 交互体验：动画过渡（framer-motion）、消息提示（react-hot-toast）
+
+## 预览
+
+<p float="left">
+    <img src="https://s2.loli.net/2025/11/23/1hDaKTnvOSftH94.png" width="48%">
+    <img src="https://s2.loli.net/2025/11/23/3jZaqY96RVWE87l.png" width="48%">
+    <img src="https://s2.loli.net/2025/11/23/6IMF3oBLetydHTY.png" width="48%">
+    <img src="https://s2.loli.net/2025/11/23/pFia3HJsBNuGR9V.png" width="48%">
+</p>
 
 ## 快速开始
 
@@ -36,7 +47,6 @@ VITE_SUPABASE_ANON_KEY=[YOUR_VITE_SUPABASE_ANON_KEY]
 VITE_SUPABASE_BUCKET=[YOUR_VITE_SUPABASE_BUCKET_NAME]
 ```
 - 存储桶需存在且可公开读取；代码在 `services/video.ts:71` 对“未找到存储桶”进行了错误提示与引导。
-- 默认存储桶名为 `IdeaUploads`（若未配置环境变量时），建议与业务实际一致。
 
 ## Supabase 后端结构
 
@@ -68,7 +78,7 @@ VITE_SUPABASE_BUCKET=[YOUR_VITE_SUPABASE_BUCKET_NAME]
 | `duration` | `integer` | 可选 | 时长（秒） |
 | `aspect_ratio` | `double` | 可选 | 宽高比 |
 
-### 存储过程
+### RPC 函数
 
 #### add_comment
 - 功能：为视频添加评论
@@ -111,6 +121,10 @@ VITE_SUPABASE_BUCKET=[YOUR_VITE_SUPABASE_BUCKET_NAME]
 - 存储桶与权限：上传/封面需在 Supabase Storage 中开启相应 Bucket 并配置允许公开读取；开发阶段可开放读取策略，生产环境请结合 RLS 与存储策略加固。
 
 ## TODOList
+- 视频上传进度提示
 - 国际化（i18n）支持，按需切换中文/英文
 - 添加视频弹幕
-- 添加管理 Dashboard
+- 添加管理模块的结果统计、表格视图
+- 支持视频录制
+- 根据简介生成视频封面
+- 无限滚动

@@ -26,3 +26,6 @@ dist-ssr
 # Lovcli files
 .dumpignore
 CODEDUMP.txt
+
+# ENV
+.env.local
