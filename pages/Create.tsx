@@ -1,0 +1,240 @@
+import React, { useState, useRef } from 'react';
+import { useApp } from '../context/AppContext';
+import { UploadIcon } from '../components/Icons';
+import { Video } from '../types';
+import { getVideoDuration } from '../services/video';
+import { uploadVideo, fetchVideoById } from '../services/video';
+import { toUiVideo } from '../services/adapters';
+import { parseTags, toastError, toastSuccess } from '../services/utils';
+
+export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+  const { currentUser, addVideo, updateVideo } = useApp();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    tags: '',
+  });
+  
+  const [files, setFiles] = useState<{ video: File | null; cover: File | null }>({
+    video: null,
+    cover: null,
+  });
+
+  const [invalid, setInvalid] = useState<{ video: boolean; cover: boolean }>({
+    video: false,
+    cover: false,
+  })
+
+  const MAX_VIDEO_SIZE = 15 * 1024 * 1024
+  const MAX_COVER_SIZE = 3 * 1024 * 1024
+
+  const [previews, setPreviews] = useState<{ video: string; cover: string }>({
+    video: '',
+    cover: '',
+  });
+  const [durationPreview, setDurationPreview] = useState<number | null>(null)
+
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'video' | 'cover') => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const tooLarge =
+        (type === 'video' && file.size > MAX_VIDEO_SIZE) ||
+        (type === 'cover' && file.size > MAX_COVER_SIZE)
+
+      if (tooLarge) {
+        if (type === 'video') {
+          toastError('视频大小超过 15MB，请压缩后重试')
+          setInvalid(prev => ({ ...prev, video: true }))
+          setFiles(prev => ({ ...prev, video: null }))
+          setPreviews(prev => ({ ...prev, video: '' }))
+        } else {
+          toastError('封面大小超过 3MB，请选择更小的图片')
+          setInvalid(prev => ({ ...prev, cover: true }))
+          setFiles(prev => ({ ...prev, cover: null }))
+          setPreviews(prev => ({ ...prev, cover: '' }))
+        }
+        e.target.value = ''
+        return
+      }
+
+      const url = URL.createObjectURL(file);
+
+      setFiles(prev => ({ ...prev, [type]: file }));
+      setPreviews(prev => ({ ...prev, [type]: url }));
+      setInvalid(prev => ({ ...prev, [type]: false }))
+      if (type === 'video') {
+        getVideoDuration(file).then(d => setDurationPreview(d)).catch(() => setDurationPreview(null))
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!files.video || !files.cover) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const dbVideo = await uploadVideo(
+        files.video,
+        files.cover,
+        {
+          title: form.title,
+          description: form.description,
+          tags: parseTags(form.tags)
+        }
+      )
+      let uiVideo: Video = toUiVideo(dbVideo)
+      if (currentUser) {
+        uiVideo = {
+          ...uiVideo,
+          uploader: currentUser,
+          isHydrated: false
+        }
+      }
+      addVideo(uiVideo)
+      toastSuccess('上传成功')
+
+      // 通过合并用户资料进行数据补齐
+      const full = await fetchVideoById(dbVideo.id)
+      if (full) {
+        const hydrated = toUiVideo(full)
+        updateVideo(dbVideo.id, { ...hydrated, isHydrated: true })
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '发布失败'
+      toastError(msg)
+    }
+    setIsSubmitting(false);
+    onComplete();
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto p-8">
+
+      <form onSubmit={handleSubmit} className="relative space-y-8 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
+        
+        {/* 文件上传区域 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 视频上传 */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">视频文件（MP4）</label>
+                <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center h-48 transition-colors ${previews.video ? 'border-primary bg-blue-50/30' : 'border-gray-300 hover:border-primary hover:bg-gray-50'}`}>
+                    {previews.video ? (
+                        <div className="relative w-full h-full flex items-center justify-center group">
+                            <video src={previews.video} className="h-full max-w-full object-contain rounded-lg" />
+                            <div className="absolute inset-0 bg-black/0 pointer-events-none opacity-0 group-hover:opacity-100 flex items-center justify-center">
+                                <span className="text-xs px-2 py-1 rounded bg-white/70 text-gray-800">Change</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <UploadIcon className="w-8 h-8 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-500">点击上传视频</p>
+                            <p className="text-xs text-gray-400 mt-1">MP4 不超过 15MB</p>
+                        </>
+                    )}
+                    <input 
+                        type="file" 
+                        accept="video/mp4" 
+                        onChange={(e) => handleFileChange(e, 'video')}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                </div>
+                {durationPreview != null && (
+                  <p className="text-xs text-gray-500 mt-2">时长：{durationPreview}s</p>
+                )}
+            </div>
+
+            {/* 封面上传 */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">封面图片（JPG/PNG）</label>
+                <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center h-48 transition-colors ${previews.cover ? 'border-primary bg-blue-50/30' : 'border-gray-300 hover:border-primary hover:bg-gray-50'}`}>
+                    {previews.cover ? (
+                         <div className="relative w-full h-full flex items-center justify-center">
+                            <img src={previews.cover} className="h-full max-w-full object-cover rounded-lg" alt="preview" />
+                         </div>
+                    ) : (
+                        <>
+                            <UploadIcon className="w-8 h-8 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-500">点击上传封面</p>
+                            <p className="text-xs text-gray-400 mt-1">推荐 16:9 或 9:16 · 不超过 3MB</p>
+                        </>
+                    )}
+                    <input 
+                        type="file" 
+                        accept="image/png, image/jpeg"
+                        onChange={(e) => handleFileChange(e, 'cover')}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                </div>
+            </div>
+        </div>
+
+        {/* 输入项 */}
+        <div className="space-y-5">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">标题 <span className="text-red-500">*</span></label>
+                <input 
+                    type="text" 
+                    required
+                    value={form.title}
+                    onChange={(e) => setForm({...form, title: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                    placeholder="示例：暑期活动方案 V1"
+                />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                <textarea 
+                    rows={3}
+                    value={form.description}
+                    onChange={(e) => setForm({...form, description: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none"
+                    placeholder="简要描述创意概念…"
+                />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">标签</label>
+                <input 
+                    type="text" 
+                    value={form.tags}
+                    onChange={(e) => setForm({...form, tags: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                    placeholder="用逗号分隔：3D、搞笑、推广"
+                />
+            </div>
+        </div>
+
+        <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+            <button 
+                type="button" 
+                onClick={onComplete}
+                disabled={isSubmitting}
+                className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+                取消
+            </button>
+            <button 
+                type="submit" 
+                disabled={isSubmitting || !form.title || !files.video || !files.cover || !currentUser || invalid.video || invalid.cover}
+                className="px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-2"
+            >
+                {isSubmitting ? '正在上传…' : '发布视频'}
+            </button>
+        </div>
+        {isSubmitting && (
+          <div className="absolute left-8 bottom-6 flex items-center gap-2 text-sm text-gray-600">
+            <svg className="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+            正在上传…
+          </div>
+        )}
+      </form>
+    </div>
+  );
+};
