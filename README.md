@@ -7,6 +7,7 @@
 前端基于 React + Vite，后端使用 Supabase 提供鉴权、数据库、存储与 RPC 能力。
 
 ## 功能特性
+
 - 创作前-创意模块：支持搜索、时间范围筛选（今天/本周/本月）、排序（最新/热门/点赞数）
 - 创作中-发布模块：拖拽/点击上传视频与封面，自动读取视频时长与封面宽高比
 - 创作后-管理模块：编辑与删除操作、即时更新
@@ -18,40 +19,48 @@
 ## 预览
 
 <p float="left">
-    <img src="https://s2.loli.net/2025/11/23/1hDaKTnvOSftH94.png" width="48%">
-    <img src="https://s2.loli.net/2025/11/23/3jZaqY96RVWE87l.png" width="48%">
-    <img src="https://s2.loli.net/2025/11/23/6IMF3oBLetydHTY.png" width="48%">
-    <img src="https://s2.loli.net/2025/11/23/pFia3HJsBNuGR9V.png" width="48%">
+    <img src="https://s2.loli.net/2025/11/26/vlxeQgNqmhwznkK.png" width="48%">
+    <img src="https://s2.loli.net/2025/11/26/Gb8XV1uRJB4KOCs.png" width="48%">
+    <img src="https://s2.loli.net/2025/11/26/HnFm6PzGCvbeVlT.png" width="48%">
+    <img src="https://s2.loli.net/2025/11/26/hVg2HlL97WtiImN.png" width="48%">
 </p>
 
 ## 快速开始
 
 ### 环境要求
+
 - `Node.js >= 18`
 - `pnpm`（或使用 `npm`/`yarn`，下文以 `pnpm` 为例）
 
 ### 安装与运行
+
 ```
 pnpm i
 pnpm dev
 ```
+
 构建与预览：
+
 ```
 pnpm build
 pnpm preview
 ```
 
 ### 环境变量（.env.local）
+
 按以下格式配置 Supabase 接入：
+
 ```
 VITE_SUPABASE_URL=[YOUR_VITE_SUPABASE_URL]
 VITE_SUPABASE_ANON_KEY=[YOUR_VITE_SUPABASE_ANON_KEY]
 VITE_SUPABASE_BUCKET=[YOUR_VITE_SUPABASE_BUCKET_NAME]
 VITE_GENERATE_FUNCTION_NAME=generate-video
 ```
+
 - 存储桶需存在且可公开读取；代码在 `services/video.ts:71` 对“未找到存储桶”进行了错误提示与引导。
 
 ### 边缘函数环境（部署在 Supabase Functions）
+
 - `VOLCANO_API_KEY`：Doubao SeeDance 接入密钥（仅在函数侧配置，不写入前端）
 - `SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`：函数侧使用 Service Role 上传生成视频并获取公开地址
 
@@ -60,6 +69,7 @@ VITE_GENERATE_FUNCTION_NAME=generate-video
 ## AI 生成视频
 
 ### 使用流程
+
 - 在发布页点击右上角“AI 生成视频”按钮
 - 填写提示词，选择参数：
   - 分辨率：`480P/720P`
@@ -69,10 +79,12 @@ VITE_GENERATE_FUNCTION_NAME=generate-video
 - 生成完成后预览，点击“使用视频”，自动将生成视频（含首帧封面）保存并进入发布流程
 
 ### 体验与占位
+
 - 生成与上传期间提供青红渐变“流动”占位符与旋转指示，避免空白区域
 - 返回发布页后，视频/封面预览加载完成即自动替换占位
 
 ### 后端说明
+
 - 边缘函数 `generate-video` 对接 Doubao SeeDance 模型：
   - `create`：创建生成任务
   - `query`：查询任务状态与返回视频地址
@@ -84,49 +96,55 @@ VITE_GENERATE_FUNCTION_NAME=generate-video
 ### 数据表
 
 #### profiles 表
-| 字段 | 类型 | 约束 | 说明 |
-|------|------|------|------|
-| `id` | `uuid` | 必填 | 主键 |
-| `uid` | `integer` | 必填 | 用户ID |
-| `username` | `text` | 可选 | 用户名 |
-| `liked_video_ids` | `text[]` | 可选 | 喜欢的视频ID数组 |
-| `created_at` | `timestamptz` | 必填 | 创建时间 |
+
+| 字段              | 类型          | 约束 | 说明             |
+| ----------------- | ------------- | ---- | ---------------- |
+| `id`              | `uuid`        | 必填 | 主键             |
+| `uid`             | `integer`     | 必填 | 用户ID           |
+| `username`        | `text`        | 可选 | 用户名           |
+| `liked_video_ids` | `text[]`      | 可选 | 喜欢的视频ID数组 |
+| `created_at`      | `timestamptz` | 必填 | 创建时间         |
 
 #### videos 表
-| 字段 | 类型 | 约束 | 说明 |
-|------|------|------|------|
-| `id` | `uuid` | 必填 | 主键 |
-| `uploader_id` | `uuid` | 必填 | 上传者ID（关联profiles.id） |
-| `title` | `text` | 必填 | 视频标题 |
-| `description` | `text` | 可选 | 描述 |
-| `tags` | `text[]` | 可选 | 标签数组 |
-| `video_path` | `text` | 必填 | 视频文件路径 |
-| `cover_path` | `text` | 必填 | 封面路径 |
-| `view_count` | `integer` | 可选 | 观看次数 |
-| `like_count` | `integer` | 可选 | 点赞数 |
-| `comments` | `jsonb` | 可选 | 评论数据 |
-| `created_at` | `timestamptz` | 必填 | 创建时间 |
-| `duration` | `integer` | 可选 | 时长（秒） |
-| `aspect_ratio` | `double` | 可选 | 宽高比 |
+
+| 字段           | 类型          | 约束 | 说明                        |
+| -------------- | ------------- | ---- | --------------------------- |
+| `id`           | `uuid`        | 必填 | 主键                        |
+| `uploader_id`  | `uuid`        | 必填 | 上传者ID（关联profiles.id） |
+| `title`        | `text`        | 必填 | 视频标题                    |
+| `description`  | `text`        | 可选 | 描述                        |
+| `tags`         | `text[]`      | 可选 | 标签数组                    |
+| `video_path`   | `text`        | 必填 | 视频文件路径                |
+| `cover_path`   | `text`        | 必填 | 封面路径                    |
+| `view_count`   | `integer`     | 可选 | 观看次数                    |
+| `like_count`   | `integer`     | 可选 | 点赞数                      |
+| `comments`     | `jsonb`       | 可选 | 评论数据                    |
+| `created_at`   | `timestamptz` | 必填 | 创建时间                    |
+| `duration`     | `integer`     | 可选 | 时长（秒）                  |
+| `aspect_ratio` | `double`      | 可选 | 宽高比                      |
 
 ### RPC 函数
 
 #### add_comment
+
 - 功能：为视频添加评论
 - 参数：`payload: jsonb`, `target_video_id: uuid`
 - 调用：`await supabase.rpc('add_comment', { payload, target_video_id })`
 
 #### increment_view_count
+
 - 功能：增加视频观看计数
 - 参数：`video_id: uuid`
 - 调用：`await supabase.rpc('increment_view_count', { video_id })`
 
 #### toggle_like
+
 - 功能：切换视频点赞状态
 - 参数：`target_video_id: uuid`
 - 调用：`await supabase.rpc('toggle_like', { target_video_id })`
 
 ## 技术栈与架构
+
 - 前端：
   - `React` + `Vite`
   - 样式：`Tailwind CSS`（实用类样式）
@@ -134,7 +152,6 @@ VITE_GENERATE_FUNCTION_NAME=generate-video
   - 通知：`react-hot-toast`
   - 上传进度：`axios`（直传存储时显示进度）
   - 状态管理：应用上下文（`context/AppContext.tsx`）
-  
 - 后端（Supabase）：
   - 鉴权与用户：`Auth`（`profiles` 表映射基础信息）
   - 数据库：`Postgres`（`videos` 表存储视频元数据、标签、统计与评论）
@@ -147,6 +164,7 @@ VITE_GENERATE_FUNCTION_NAME=generate-video
   - 调用方式：`supabase.functions.invoke`；函数侧统一处理 CORS/预检（`OPTIONS`）
 
 ## 目录结构
+
 ```
 .
 ├─ components/                 # 组件库
@@ -170,9 +188,11 @@ VITE_GENERATE_FUNCTION_NAME=generate-video
 ```
 
 ## 常见问题
+
 - 存储桶与权限：上传/封面需在 Supabase Storage 中开启相应 Bucket 并配置允许公开读取；开发阶段可开放读取策略，生产环境请结合 RLS 与存储策略加固。
 
 ## TODOList
+
 - 视频上传进度提示
 - 国际化（i18n）支持，按需切换中文/英文
 - 添加视频弹幕
