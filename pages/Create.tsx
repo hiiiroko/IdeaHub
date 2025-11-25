@@ -349,7 +349,7 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
       .aigc-btn::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#22d3ee 0%,#ef4444 50%,#22d3ee 100%);background-size:200% 100%;opacity:1;z-index:0;animation:aigcFlow 3s linear infinite}
       .aigc-btn>span{position:relative;z-index:1}
       .aigc-btn{box-shadow:0 0 0 1px rgba(0,0,0,.1)}
-      @keyframes aigcFlow{0%{background-position:0% 0%}50%{background-position:100% 0%}100%{background-position:0% 0%}}
+      @keyframes aigcFlow{0%{background-position:0% 0%}100%{background-position:200% 0%}}
       .aigc-skeleton{width:100%;max-width:420px;background:linear-gradient(90deg,rgba(34,211,238,.25),rgba(239,68,68,.25),rgba(34,211,238,.25));background-size:200% 100%;animation:aigcFlow 2s linear infinite}
       .aigc-spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.6);border-top-color:#22d3ee;border-right-color:#ef4444;border-radius:50%;animation:spin 1s linear infinite}
       @keyframes spin{to{transform:rotate(360deg)}}

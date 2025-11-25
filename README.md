@@ -173,7 +173,10 @@ VITE_GENERATE_FUNCTION_NAME=generate-video
 - 存储桶与权限：上传/封面需在 Supabase Storage 中开启相应 Bucket 并配置允许公开读取；开发阶段可开放读取策略，生产环境请结合 RLS 与存储策略加固。
 
 ## TODOList
+- 视频上传进度提示
 - 国际化（i18n）支持，按需切换中文/英文
 - 添加视频弹幕
 - 添加管理模块的结果统计、表格视图
 - 支持视频录制
+- 根据简介生成视频封面
+- 无限滚动
