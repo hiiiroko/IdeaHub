@@ -25,16 +25,16 @@ export const ConfirmModal: React.FC<{
           <button onClick={onClose} className="text-gray-500 dark:text-gray-400">✕</button>
         </div>
         <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">{message}</p>
-        <div className="flex gap-2 justify-end">
-          <button onClick={onClose} disabled={working} className="px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50">{cancelText}</button>
-          <button onClick={handleConfirm} disabled={working} className="px-4 py-2 rounded bg-red-600 text-white disabled:opacity-50">{confirmText}</button>
-        </div>
-        {working && (
-          <div className="absolute left-6 bottom-6 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className="mt-2 flex items-center justify-between">
+          <div className={`flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 ${working ? 'opacity-100' : 'opacity-0'}`}>
             <svg className="animate-spin h-4 w-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
             正在删除...
           </div>
-        )}
+          <div className="flex gap-2">
+            <button onClick={onClose} disabled={working} className="px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50">{cancelText}</button>
+            <button onClick={handleConfirm} disabled={working} className="px-4 py-2 rounded bg-red-600 text-white disabled:opacity-50">{confirmText}</button>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { EditIcon, TrashIcon, PlayIcon, EyeIcon } from '../components/Icons';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { deleteVideo as deleteVideoSvc, fetchVideos } from '../services/video';
+import { toastSuccess } from '../services/utils';
 import { toUiVideo } from '../services/adapters';
 import { getCurrentUserProfile } from '../services/auth';
 import { EditVideoModal } from '../components/EditVideoModal';
@@ -172,6 +173,7 @@ export const Manage: React.FC = () => {
           // 已通过 deleteVideo 更新上下文以替换页面的本地视图，或直接依赖上下文的初始加载器
           // 此处无需进一步处理，因为上下文未暴露 setter；以上的本地移除已更新 UI
           setPendingDeleteId(null)
+          toastSuccess('删除成功')
         }}
         onClose={() => setPendingDeleteId(null)}
       />

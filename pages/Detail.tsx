@@ -129,13 +129,13 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
                             <FakeAvatar name={comment.user?.username || 'U'} size={32} />
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <p className="text-xs font-bold text-gray-900">{comment.user?.username}</p>
+                                    <p className="text-xs font-bold text-gray-900 dark:text-gray-100">{comment.user?.username}</p>
                                     <span className="text-xs text-gray-400">
                                         {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
-                                <div className="inline-block max-w-[85%] bg-gray-50 pl-4 pr-4 py-2 rounded-2xl rounded-tl-none break-words">
-                                    <p className="m-0 text-sm leading-snug text-gray-700 whitespace-pre-wrap text-pretty">{comment.content}</p>
+                                <div className="inline-block max-w-[85%] bg-gray-50 dark:bg-gray-700 pl-4 pr-4 py-2 rounded-2xl rounded-tl-none break-words">
+                                    <p className="m-0 text-sm leading-snug text-gray-700 dark:text-gray-200 whitespace-pre-wrap text-pretty">{comment.content}</p>
                                 </div>
                             </div>
                         </div>
@@ -151,7 +151,7 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         placeholder={currentUser ? "添加评论…" : "登录后可评论"}
-                        className="w-full pl-4 pr-12 py-3 bg-gray-100 border-transparent focus:bg-white focus:border-primary border rounded-full text-sm transition-all outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:border-primary border rounded-full text-sm transition-all outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400"
                     />
                     <button 
                         type="submit"

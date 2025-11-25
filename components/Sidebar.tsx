@@ -159,10 +159,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
           </div>
           <button
             onClick={async () => { await logout(); onNavigate('discovery'); }}
-            className="group w-full flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+            className="group w-full flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-md transition-colors"
           >
             <span className="flex items-center gap-2 transition-all duration-500 ease-in-out -ml-3 group-hover:ml-0">
-              <LogOutIcon className="w-4 h-4" />
+              <LogOutIcon className="w-4 h-4 text-red-600 dark:text-red-800" />
               <span>退出登录</span>
             </span>
           </button>

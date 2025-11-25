@@ -286,7 +286,7 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
             </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+        <div className="pt-4 flex justify-end gap-3">
             <button 
                 type="button" 
                 onClick={onComplete}
