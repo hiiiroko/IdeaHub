@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import type { Video as DbVideo } from '../types/index.ts'
 
@@ -60,7 +61,8 @@ export const fetchVideos = async (
 export const uploadVideo = async (
   file: File,
   cover: File,
-  meta: { title: string; description: string; tags: string[] }
+  meta: { title: string; description: string; tags: string[] },
+  onProgress?: (percent: number) => void
 ) => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('未登录')
@@ -80,8 +82,34 @@ export const uploadVideo = async (
     return data.publicUrl
   }
 
+  const uploadWithProgress = async (bucket: string, path: string, f: File, cb?: (p: number) => void) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('未登录')
+    const token = session.access_token
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+    const baseUrl = (supabaseUrl || '').replace(/\/$/, '')
+    const url = `${baseUrl}/storage/v1/object/${bucket}/${path}`
+    await axios.post(url, f, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': f.type,
+        'x-upsert': 'false'
+      },
+      onUploadProgress: (evt) => {
+        if (evt.total && cb) {
+          const percent = Math.round((evt.loaded / evt.total) * 100)
+          cb(percent)
+        }
+      }
+    })
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+    return data.publicUrl
+  }
+
+  const videoExt = file.name.split('.').pop()
+  const videoPath = `${user.id}/videos/${uuidv4()}.${videoExt}`
   const [videoUrl, coverUrl] = await Promise.all([
-    uploadToStorage(file, 'videos'),
+    uploadWithProgress(BUCKET, videoPath, file, onProgress),
     uploadToStorage(cover, 'covers')
   ])
 

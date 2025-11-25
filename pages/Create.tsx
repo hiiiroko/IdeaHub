@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { UploadIcon } from '../components/Icons';
+import { UploadIcon, PlayIcon } from '../components/Icons';
 import { Video } from '../types';
 import { getVideoDuration } from '../services/video';
 import { uploadVideo, fetchVideoById } from '../services/video';
@@ -10,6 +10,8 @@ import { parseTags, toastError, toastSuccess } from '../services/utils';
 export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const { currentUser, addVideo, updateVideo } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
   
   const [form, setForm] = useState({
     title: '',
@@ -76,6 +78,7 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
     if (!files.video || !files.cover) return;
 
     setIsSubmitting(true);
+    setUploadPercent(0);
 
     try {
       const dbVideo = await uploadVideo(
@@ -85,7 +88,8 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
           title: form.title,
           description: form.description,
           tags: parseTags(form.tags)
-        }
+        },
+        (p) => setUploadPercent(p)
       )
       let uiVideo: Video = toUiVideo(dbVideo)
       if (currentUser) {
@@ -144,9 +148,19 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
                         className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                 </div>
-                {durationPreview != null && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">时长：{durationPreview}s</p>
-                )}
+            <div className="mt-2 h-6 flex items-center justify-between">
+              <p className="text-xs text-gray-500 dark:text-gray-400">{durationPreview != null ? `时长：${durationPreview}s` : ''}</p>
+              {previews.video && durationPreview != null ? (
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen(true)}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  title="预览播放"
+                >
+                  <PlayIcon className="w-3 h-3" /> 预览播放
+                </button>
+              ) : null}
+            </div>
             </div>
 
             {/* 封面上传 */}
@@ -229,12 +243,38 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
             </button>
         </div>
         {isSubmitting && (
-          <div className="absolute left-8 bottom-6 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-            <svg className="animate-spin h-4 w-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-            正在上传…
+          <div className="absolute left-8 bottom-6 text-sm w-[280px] md:w-[360px]">
+            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-primary rounded-full transition-all" style={{ width: `${uploadPercent}%` }}></div>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-gray-600 dark:text-gray-400">
+              <span>正在上传…</span>
+              <span>{uploadPercent}%</span>
+            </div>
           </div>
         )}
       </form>
+      {previewOpen && previews.video && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+            <button
+              onClick={() => setPreviewOpen(false)}
+              className="absolute top-3 right-3 z-10 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
+              aria-label="关闭预览"
+            >
+              ✕
+            </button>
+            <div className="w-full bg-black flex items-center justify-center">
+              <video
+                src={previews.video}
+                controls
+                autoPlay
+                className="w-full h-full max-h-[80vh] object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

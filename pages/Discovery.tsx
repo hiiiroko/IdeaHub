@@ -132,7 +132,7 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
           <select 
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-lg focus:outline-none focus:ring-primary focus:border-primary block p-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
           >
             <option value={TimeRange.ALL}>全部时间</option>
             <option value={TimeRange.TODAY}>今天</option>

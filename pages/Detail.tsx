@@ -151,7 +151,7 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         placeholder={currentUser ? "添加评论…" : "登录后可评论"}
-                        className="w-full pl-4 pr-12 py-3 bg-gray-100 border-transparent focus:bg-white focus:border-primary border rounded-full text-sm transition-all outline-none"
+                        className="w-full pl-4 pr-12 py-3 bg-gray-100 border-transparent focus:bg-white focus:border-primary border rounded-full text-sm transition-all outline-none focus:ring-2 focus:ring-primary"
                     />
                     <button 
                         type="submit"
