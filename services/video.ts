@@ -17,6 +17,17 @@ export const getVideoDuration = (file: File): Promise<number> => {
   })
 }
 
+export const getVideoDurationFromUrl = (url: string): Promise<number> => {
+  return new Promise((resolve) => {
+    const element = document.createElement('video')
+    element.preload = 'metadata'
+    element.onloadedmetadata = () => {
+      resolve(Math.round(element.duration))
+    }
+    element.src = url
+  })
+}
+
 /**
  * 获取图片的宽高比（宽度/高度）
  */
@@ -133,6 +144,41 @@ export const uploadVideo = async (
     .select()
     .single()
 
+  if (error) throw error
+  return data as DbVideo
+}
+
+export const publishGeneratedVideoFromUrl = async (
+  videoUrl: string,
+  cover: File,
+  meta: { title: string; description: string; tags: string[] }
+) => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('未登录')
+  const { data: coverUpload } = supabase.storage.from(BUCKET)
+  const ext = cover.name.split('.').pop()
+  const coverPath = `${user.id}/covers/${uuidv4()}.${ext}`
+  const { error: coverErr } = await supabase.storage.from(BUCKET).upload(coverPath, cover)
+  if (coverErr) throw coverErr
+  const { data: coverPublic } = supabase.storage.from(BUCKET).getPublicUrl(coverPath)
+  const [duration, aspectRatio] = await Promise.all([
+    getVideoDurationFromUrl(videoUrl),
+    getImageAspectRatio(cover)
+  ])
+  const { data, error } = await supabase
+    .from('videos')
+    .insert({
+      uploader_id: user.id,
+      title: meta.title,
+      description: meta.description,
+      tags: meta.tags,
+      video_path: videoUrl,
+      cover_path: coverPublic.publicUrl,
+      duration,
+      aspect_ratio: aspectRatio
+    })
+    .select()
+    .single()
   if (error) throw error
   return data as DbVideo
 }

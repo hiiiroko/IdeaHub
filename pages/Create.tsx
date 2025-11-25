@@ -4,8 +4,10 @@ import { UploadIcon, PlayIcon } from '../components/Icons';
 import { Video } from '../types';
 import { getVideoDuration } from '../services/video';
 import { uploadVideo, fetchVideoById } from '../services/video';
+import { publishGeneratedVideoFromUrl, getVideoDurationFromUrl } from '../services/video';
 import { toUiVideo } from '../services/adapters';
 import { parseTags, toastError, toastSuccess } from '../services/utils';
+import { VideoGenerateModal } from '../components/AI/VideoGenerateModal';
 
 export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const { currentUser, addVideo, updateVideo } = useApp();
@@ -37,6 +39,13 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
     cover: '',
   });
   const [durationPreview, setDurationPreview] = useState<number | null>(null)
+  const [previewLoadingVideo, setPreviewLoadingVideo] = useState(false)
+  const [previewLoadingCover, setPreviewLoadingCover] = useState(false)
+
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiVideoUrl, setAiVideoUrl] = useState('')
+  const [aiGenerating, setAiGenerating] = useState(false)
+  const [aiRatio, setAiRatio] = useState<'16:9' | '4:3' | '1:1' | '3:4' | '9:16' | '21:9'>('16:9')
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'video' | 'cover') => {
@@ -68,6 +77,13 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
       setPreviews(prev => ({ ...prev, [type]: url }));
       setInvalid(prev => ({ ...prev, [type]: false }))
       if (type === 'video') {
+        setAiVideoUrl('')
+        setPreviewLoadingVideo(true)
+      }
+      if (type === 'cover') {
+        setPreviewLoadingCover(true)
+      }
+      if (type === 'video') {
         getVideoDuration(file).then(d => setDurationPreview(d)).catch(() => setDurationPreview(null))
       }
     }
@@ -75,22 +91,22 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!files.video || !files.cover) return;
+    const isAi = !!aiVideoUrl
+    if (!isAi && (!files.video || !files.cover)) return;
 
     setIsSubmitting(true);
     setUploadPercent(0);
 
     try {
-      const dbVideo = await uploadVideo(
-        files.video,
-        files.cover,
-        {
-          title: form.title,
-          description: form.description,
-          tags: parseTags(form.tags)
-        },
-        (p) => setUploadPercent(p)
-      )
+      const meta = { title: form.title, description: form.description, tags: parseTags(form.tags) }
+      const dbVideo = isAi
+        ? await publishGeneratedVideoFromUrl(aiVideoUrl, files.cover!, meta)
+        : await uploadVideo(
+            files.video!,
+            files.cover!,
+            meta,
+            (p) => setUploadPercent(p)
+          )
       let uiVideo: Video = toUiVideo(dbVideo)
       if (currentUser) {
         uiVideo = {
@@ -116,6 +132,25 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
     onComplete();
   };
 
+  const onAiSaved = async (publicUrl: string, coverBlob: Blob) => {
+    setAiVideoUrl(publicUrl)
+    setAiGenerating(false)
+    setPreviews(prev => ({ ...prev, video: publicUrl }))
+    setPreviewLoadingVideo(true)
+    const coverFile = new File([coverBlob], `cover-${Date.now()}.jpg`, { type: 'image/jpeg' })
+    setFiles(prev => ({ ...prev, cover: coverFile, video: null }))
+    const coverUrl = URL.createObjectURL(coverBlob)
+    setPreviews(prev => ({ ...prev, cover: coverUrl }))
+    setPreviewLoadingCover(true)
+    setInvalid(prev => ({ ...prev, cover: false }))
+    try {
+      const d = await getVideoDurationFromUrl(publicUrl)
+      setDurationPreview(d)
+    } catch {
+      setDurationPreview(null)
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto p-8">
 
@@ -127,9 +162,21 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
             <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">视频文件（MP4）</label>
                 <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center h-48 transition-colors ${previews.video ? 'border-primary bg-blue-50/30 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                    <button
+                      type="button"
+                      onClick={() => setAiOpen(true)}
+                      className="aigc-btn absolute top-2 right-2 z-10 text-xs px-2 py-1 rounded"
+                    ><span>AI 生成视频</span></button>
                     {previews.video ? (
                         <div className="relative w-full h-full flex items-center justify-center group">
-                            <video src={previews.video} className="h-full max-w-full object-contain rounded-lg" />
+                            <video src={previews.video} className="h-full max-w-full object-contain rounded-lg" onLoadedData={() => setPreviewLoadingVideo(false)} />
+                            {typeof previewLoadingVideo !== 'undefined' && previewLoadingVideo && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="aigc-skeleton w-11/12 h-5/6 rounded-lg flex items-center justify-center">
+                                  <div className="aigc-spinner"></div>
+                                </div>
+                              </div>
+                            )}
                             <div className="absolute inset-0 bg-black/0 pointer-events-none opacity-0 group-hover:opacity-100 flex items-center justify-center">
                                 <span className="text-xs px-2 py-1 rounded bg-white/70 dark:bg-gray-200/70 text-gray-800 dark:text-gray-800">Change</span>
                             </div>
@@ -139,13 +186,20 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
                             <UploadIcon className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
                             <p className="text-sm text-gray-500 dark:text-gray-400">点击上传视频</p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">MP4 不超过 15MB</p>
+                            {aiGenerating && (
+                              <div className="w-full flex items-center justify-center mt-2">
+                                <div className="aigc-skeleton rounded-lg overflow-hidden flex items-center justify-center" style={{ aspectRatio: aiRatio.replace(':','/') }}>
+                                  <div className="aigc-spinner"></div>
+                                </div>
+                              </div>
+                            )}
                         </>
                     )}
                     <input 
                         type="file" 
                         accept="video/mp4" 
                         onChange={(e) => handleFileChange(e, 'video')}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        className="absolute inset-0 opacity-0 cursor-pointer z-0"
                     />
                 </div>
             <div className="mt-2 h-6 flex items-center justify-between">
@@ -169,7 +223,14 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
                 <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center h-48 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)] ${previews.cover ? 'border-primary bg-blue-50/30 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                     {previews.cover ? (
                          <div className="relative w-full h-full flex items-center justify-center">
-                            <img src={previews.cover} className="h-full max-w-full object-cover rounded-lg" alt="preview" />
+                            <img src={previews.cover} className="h-full max-w-full object-cover rounded-lg" alt="preview" onLoad={() => setPreviewLoadingCover(false)} />
+                            {typeof previewLoadingCover !== 'undefined' && previewLoadingCover && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="aigc-skeleton w-11/12 h-5/6 rounded-lg flex items-center justify-center">
+                                  <div className="aigc-spinner"></div>
+                                </div>
+                              </div>
+                            )}
                          </div>
                     ) : (
                         <>
@@ -236,11 +297,19 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
             </button>
             <button 
                 type="submit" 
-                disabled={isSubmitting || !form.title || !files.video || !files.cover || !currentUser || invalid.video || invalid.cover}
+                disabled={
+                  isSubmitting ||
+                  !form.title ||
+                  (!files.video && !aiVideoUrl) ||
+                  !files.cover ||
+                  !currentUser ||
+                  invalid.video ||
+                  invalid.cover
+                }
                 className="px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-2"
-            >
+              >
                 {isSubmitting ? '正在上传…' : '发布视频'}
-            </button>
+              </button>
         </div>
         {isSubmitting && (
           <div className="absolute left-8 bottom-6 text-sm w-[280px] md:w-[360px]">
@@ -275,6 +344,17 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
           </div>
         </div>
       )}
+      <style>{`
+      .aigc-btn{position:absolute;overflow:hidden;border-radius:0.375rem;color:#fff}
+      .aigc-btn::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#22d3ee 0%,#ef4444 50%,#22d3ee 100%);background-size:200% 100%;opacity:1;z-index:0;animation:aigcFlow 3s linear infinite}
+      .aigc-btn>span{position:relative;z-index:1}
+      .aigc-btn{box-shadow:0 0 0 1px rgba(0,0,0,.1)}
+      @keyframes aigcFlow{0%{background-position:0% 0%}50%{background-position:100% 0%}100%{background-position:0% 0%}}
+      .aigc-skeleton{width:100%;max-width:420px;background:linear-gradient(90deg,rgba(34,211,238,.25),rgba(239,68,68,.25),rgba(34,211,238,.25));background-size:200% 100%;animation:aigcFlow 2s linear infinite}
+      .aigc-spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.6);border-top-color:#22d3ee;border-right-color:#ef4444;border-radius:50%;animation:spin 1s linear infinite}
+      @keyframes spin{to{transform:rotate(360deg)}}
+      `}</style>
+      <VideoGenerateModal open={aiOpen} onClose={() => setAiOpen(false)} onSaved={onAiSaved} onStart={(p)=>{ setAiGenerating(true); setAiRatio(p.ratio) }} onReset={()=> setAiGenerating(false)} />
     </div>
   );
 };

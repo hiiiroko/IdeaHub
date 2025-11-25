@@ -116,7 +116,7 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
 
             {/* 评论列表 */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                <h3 className="font-bold text-gray-900">评论（{video.commentCount}）</h3>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100">评论（{video.commentCount}）</h3>
                 {(!video.comments || video.comments.length === 0) ? (
                     <div className="text-center py-10 text-gray-400 text-sm">
                         暂无评论，快来分享你的想法！
