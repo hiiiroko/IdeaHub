@@ -115,26 +115,26 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
   return (
     <div className="max-w-3xl mx-auto p-8">
 
-      <form onSubmit={handleSubmit} className="relative space-y-8 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
+      <form onSubmit={handleSubmit} className="relative space-y-8 bg-white dark:bg-gray-800 p-8 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
         
         {/* 文件上传区域 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 视频上传 */}
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">视频文件（MP4）</label>
-                <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center h-48 transition-colors ${previews.video ? 'border-primary bg-blue-50/30' : 'border-gray-300 hover:border-primary hover:bg-gray-50'}`}>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">视频文件（MP4）</label>
+                <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center h-48 transition-colors ${previews.video ? 'border-primary bg-blue-50/30 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                     {previews.video ? (
                         <div className="relative w-full h-full flex items-center justify-center group">
                             <video src={previews.video} className="h-full max-w-full object-contain rounded-lg" />
                             <div className="absolute inset-0 bg-black/0 pointer-events-none opacity-0 group-hover:opacity-100 flex items-center justify-center">
-                                <span className="text-xs px-2 py-1 rounded bg-white/70 text-gray-800">Change</span>
+                                <span className="text-xs px-2 py-1 rounded bg-white/70 dark:bg-gray-200/70 text-gray-800 dark:text-gray-800">Change</span>
                             </div>
                         </div>
                     ) : (
                         <>
-                            <UploadIcon className="w-8 h-8 text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-500">点击上传视频</p>
-                            <p className="text-xs text-gray-400 mt-1">MP4 不超过 15MB</p>
+                            <UploadIcon className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">点击上传视频</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">MP4 不超过 15MB</p>
                         </>
                     )}
                     <input 
@@ -145,14 +145,14 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
                     />
                 </div>
                 {durationPreview != null && (
-                  <p className="text-xs text-gray-500 mt-2">时长：{durationPreview}s</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">时长：{durationPreview}s</p>
                 )}
             </div>
 
             {/* 封面上传 */}
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">封面图片（JPG/PNG）</label>
-                <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center h-48 transition-colors ${previews.cover ? 'border-primary bg-blue-50/30' : 'border-gray-300 hover:border-primary hover:bg-gray-50'}`}>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">封面图片（JPG/PNG）</label>
+                <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center h-48 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)] ${previews.cover ? 'border-primary bg-blue-50/30 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                     {previews.cover ? (
                          <div className="relative w-full h-full flex items-center justify-center">
                             <img src={previews.cover} className="h-full max-w-full object-cover rounded-lg" alt="preview" />
@@ -177,46 +177,46 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
         {/* 输入项 */}
         <div className="space-y-5">
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">标题 <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">标题 <span className="text-red-500">*</span></label>
                 <input 
                     type="text" 
                     required
                     value={form.title}
                     onChange={(e) => setForm({...form, title: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
                     placeholder="示例：暑期活动方案 V1"
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">描述</label>
                 <textarea 
                     rows={3}
                     value={form.description}
                     onChange={(e) => setForm({...form, description: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all resize-none"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)] resize-none"
                     placeholder="简要描述创意概念…"
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">标签</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">标签</label>
                 <input 
                     type="text" 
                     value={form.tags}
                     onChange={(e) => setForm({...form, tags: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
                     placeholder="用逗号分隔：3D、搞笑、推广"
                 />
             </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+        <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
             <button 
                 type="button" 
                 onClick={onComplete}
                 disabled={isSubmitting}
-                className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
                 取消
             </button>
@@ -229,8 +229,8 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
             </button>
         </div>
         {isSubmitting && (
-          <div className="absolute left-8 bottom-6 flex items-center gap-2 text-sm text-gray-600">
-            <svg className="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+          <div className="absolute left-8 bottom-6 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <svg className="animate-spin h-4 w-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
             正在上传…
           </div>
         )}

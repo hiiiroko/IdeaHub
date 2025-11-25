@@ -27,6 +27,7 @@ interface AppState {
   videos: Video[];
   isLoading: boolean;
   isAuthLoading: boolean;
+  theme: 'light' | 'dark';
 }
 
 /**
@@ -45,6 +46,8 @@ interface AppContextType extends AppState {
   authLogin: (email: string, password: string) => Promise<void>;
   authRegister: (email: string, password: string, username: string) => Promise<void>;
   refreshVideos: () => Promise<void>;
+  toggleTheme: () => void;
+  setTheme: (next: 'light' | 'dark') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -59,6 +62,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem('theme') : null;
+    if (saved === 'light' || saved === 'dark') return saved;
+    const prefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') root.classList.add('dark');
+    else root.classList.remove('dark');
+    window.localStorage.setItem('theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     const init = async () => {
@@ -194,6 +210,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await incrementViewCount(videoId)
   }, [])
 
+  const toggleTheme = useCallback(() => {
+    setThemeState(prev => (prev === 'light' ? 'dark' : 'light'))
+  }, [])
+
+  const setTheme = useCallback((next: 'light' | 'dark') => {
+    setThemeState(next)
+  }, [])
+
   /**
    * 账号登录
    * @param email 邮箱
@@ -241,6 +265,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         videos,
         isLoading,
         isAuthLoading,
+        theme,
         login,
         logout,
         addVideo,
@@ -252,6 +277,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ,authLogin
         ,authRegister
         ,refreshVideos
+        ,toggleTheme
+        ,setTheme
       }}
     >
       {children}

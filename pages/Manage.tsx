@@ -60,8 +60,8 @@ export const Manage: React.FC = () => {
     <>
     <div className="p-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">我的视频</h1>
-            <span className="bg-blue-50 text-primary px-3 py-1 rounded-full text-sm font-medium">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">我的视频</h1>
+            <span className="bg-blue-50 dark:bg-blue-900/20 text-primary px-3 py-1 rounded-full text-sm font-medium">
                 {filteredMyVideos.length} 条结果
             </span>
         </div>
@@ -74,10 +74,10 @@ export const Manage: React.FC = () => {
           onSearchChange={setSearch}
         />
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                <table className="min-w-full transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
+                    <thead className="bg-gray-50 dark:bg-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">视频</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">数据</th>
@@ -86,39 +86,39 @@ export const Manage: React.FC = () => {
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
                         {filteredMyVideos.map((video) => (
-                            <tr key={video.id} className="hover:bg-gray-50 transition-colors">
+                            <tr key={video.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-16 w-24 relative rounded bg-gray-100 overflow-hidden">
+                                        <div className="flex-shrink-0 h-16 w-24 relative rounded bg-gray-100 dark:bg-gray-700 overflow-hidden">
                                             <img className="h-16 w-24 object-cover" src={video.coverUrl} alt="" />
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors">
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
                                                  {/* 遮罩层 */}
                                             </div>
                                         </div>
                                         <div className="ml-4">
-                                            <div className="text-sm font-medium text-gray-900 max-w-xs truncate">{video.title}</div>
-                                            <div className="text-xs text-gray-500 mt-1">{video.duration}s</div>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 max-w-xs truncate">{video.title}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{video.duration}s</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex flex-col gap-1">
-                                        <span className="flex items-center gap-1 text-xs text-gray-600">
+                                        <span className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
                                             <EyeIcon className="w-3 h-3" /> {video.viewCount}
                                         </span>
-                                        <span className="flex items-center gap-1 text-xs text-gray-600">
+                                        <span className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
                                             ♥ {video.likeCount}
                                         </span>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
                                         已发布
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                     {new Date(video.createdAt).toLocaleDateString()}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -138,7 +138,7 @@ export const Manage: React.FC = () => {
                     </tbody>
                 </table>
                 {filteredMyVideos.length === 0 && (
-                    <div className="p-10 text-center text-gray-500 text-sm">
+                    <div className="p-10 text-center text-gray-500 dark:text-gray-400 text-sm">
                         你还没有上传任何视频。
                     </div>
                 )}

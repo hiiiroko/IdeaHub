@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-bg min-h-screen" data-theme="light">
+<html lang="en" class="min-h-screen" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/IdeaHub-LOGO.png" />
@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {
@@ -23,7 +24,7 @@
       }
     </script>
   </head>
-  <body class="bg-bg min-h-screen">
+  <body class="bg-bg dark:bg-gray-900 min-h-screen h-screen">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

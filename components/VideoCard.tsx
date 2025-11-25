@@ -35,14 +35,14 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
   }
   return (
     <div 
-        className="group relative bg-white rounded-xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300 cursor-pointer mb-4 break-inside-avoid"
+        className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg cursor-pointer mb-4 break-inside-avoid transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
         onClick={onClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        style={{ transform: tilt, boxShadow: shadow, transition: 'transform 150ms cubic-bezier(0.2, 0.6, 0.2, 1), box-shadow 150ms ease', willChange: 'transform', transformStyle: 'preserve-3d' }}
+        style={{ transform: tilt, boxShadow: shadow, transition: 'transform 150ms cubic-bezier(0.2, 0.6, 0.2, 1), box-shadow 150ms ease, background-color 500ms cubic-bezier(0.2, 0.6, 0.2, 1), border-color 500ms cubic-bezier(0.2, 0.6, 0.2, 1)', willChange: 'transform', transformStyle: 'preserve-3d' }}
     >
       {/* 缩略图容器 - 使用 aspect-ratio 预留高度 */}
-      <div className="relative bg-gray-100 overflow-hidden" style={{ aspectRatio: video.aspectRatio }}>
+      <div className="relative bg-gray-100 dark:bg-gray-700 overflow-hidden" style={{ aspectRatio: video.aspectRatio }}>
         {!coverLoaded && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="h-8 w-8 rounded-full border-2 border-white/70 border-t-transparent animate-spin" />
@@ -75,20 +75,20 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
 
       {/* 内容 */}
       <div className="p-3">
-        <h3 className="font-medium text-gray-900 text-sm leading-snug line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm leading-snug line-clamp-2 mb-2 group-hover:text-primary transition-colors">
             {video.title}
         </h3>
         
         <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
                 <FakeAvatar name={video.uploader?.username || 'U'} size={20} />
-                <span className="text-xs text-gray-500 truncate max-w-[80px]">{video.uploader?.username}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[80px]">{video.uploader?.username}</span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
+            <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                 <HeartIcon className={`w-3 h-3 ${video.isLiked ? 'fill-red-500 text-red-500' : ''}`} fill={video.isLiked} />
                 <span>{video.likeCount}</span>
             </div>
-        </div>
+      </div>
       </div>
     </div>
   );

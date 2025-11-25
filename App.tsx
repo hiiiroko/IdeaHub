@@ -24,10 +24,10 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bg flex font-sans text-gray-900">
+    <div className="min-h-screen bg-bg dark:bg-gray-900 flex font-sans text-gray-900 dark:text-gray-100 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
       <Sidebar currentPage={page} onNavigate={handleNavigate} onRequireAuth={() => setAuthOpen(true)} />
       
-      <main className="flex-1 ml-64 min-h-screen">
+      <main className="flex-1 ml-64 min-h-screen bg-bg dark:bg-gray-900 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
         {page === 'discovery' && (
           <Discovery onVideoClick={setSelectedVideoId} />
         )}
