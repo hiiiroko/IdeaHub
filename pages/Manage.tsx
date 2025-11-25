@@ -16,6 +16,8 @@ export const Manage: React.FC = () => {
   const [search, setSearch] = useState('')
   const [timeRange, setTimeRange] = useState<TimeRange>(TimeRange.ALL)
   const [sort, setSort] = useState<SortOption>(SortOption.LATEST)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState('')
 
   const myVideos = videos.filter(v => v.uploaderId === currentUser?.id);
   const filteredMyVideos = useMemo(() => {
@@ -91,12 +93,17 @@ export const Manage: React.FC = () => {
                             <tr key={video.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-16 w-24 relative rounded bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                            <img className="h-16 w-24 object-cover" src={video.coverUrl} alt="" />
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
-                                                 {/* 遮罩层 */}
+                                        <button
+                                          type="button"
+                                          className="flex-shrink-0 h-16 w-24 relative rounded bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer group"
+                                          onClick={() => { setPreviewUrl(video.videoUrl); setPreviewOpen(true) }}
+                                          title="预览播放"
+                                        >
+                                            <img className="h-16 w-24 object-cover" src={video.coverUrl} alt="cover" />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                                              <PlayIcon className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                                             </div>
-                                        </div>
+                                        </button>
                                         <div className="ml-4">
                                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100 max-w-xs truncate">{video.title}</div>
                                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{video.duration}s</div>
@@ -173,6 +180,22 @@ export const Manage: React.FC = () => {
       const target = videos.find(v => v.id === pendingEditId)
       return target ? <EditVideoModal video={target} onClose={() => setPendingEditId(null)} /> : null
     })()}
+    {previewOpen && previewUrl && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+          <button
+            onClick={() => { setPreviewOpen(false); setPreviewUrl('') }}
+            className="absolute top-3 right-3 z-10 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
+            aria-label="关闭预览"
+          >
+            ✕
+          </button>
+          <div className="w-full bg-black flex items-center justify-center">
+            <video src={previewUrl} controls autoPlay className="w-full h-full max-h-[80vh] object-contain" />
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 };
