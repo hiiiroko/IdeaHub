@@ -1,9 +1,11 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useApp } from '../context/AppContext';
+import React, { useMemo, useState, useEffect } from 'react';
+
+import { SearchIcon } from '../components/Icons';
+import { SegmentedControl } from '../components/SegmentedControl';
 import { VideoCard } from '../components/VideoCard';
 import { VideoCardSkeleton } from '../components/VideoCardSkeleton';
-import { SearchIcon } from '../components/Icons';
+import { useApp } from '../context/AppContext';
 import { SortOption, TimeRange, Video } from '../types';
 
 export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ onVideoClick }) => {
@@ -19,47 +21,7 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
     return () => clearTimeout(t)
   }, [searchInput])
 
-  // 为排序按钮添加动画高亮效果
-  const sortContainerRef = useRef<HTMLDivElement | null>(null);
-  const sortBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const [highlightStyle, setHighlightStyle] = useState<React.CSSProperties>({ opacity: 0 });
-
-  useEffect(() => {
-    const activeBtn = sortBtnRefs.current[sort];
-    const container = sortContainerRef.current;
-    if (!activeBtn || !container) return;
-
-    // 🎯 使用 offset 属性，自动相对于 padding 边缘计算
-    setHighlightStyle({
-      top: activeBtn.offsetTop,
-      left: activeBtn.offsetLeft,
-      width: activeBtn.offsetWidth,
-      height: activeBtn.offsetHeight,
-      borderRadius: 6,
-      transition: 'all 500ms cubic-bezier(0.2, 0.6, 0.2, 1)',
-      opacity: 1
-    });
-  }, [sort]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const activeBtn = sortBtnRefs.current[sort];
-      const container = sortContainerRef.current;
-      if (!activeBtn || !container) return;
-
-      // 🎯 同样使用 offset 属性，保持与上面一致
-      setHighlightStyle(prev => ({
-        ...prev,
-        top: activeBtn.offsetTop,
-        left: activeBtn.offsetLeft,
-        width: activeBtn.offsetWidth,
-        height: activeBtn.offsetHeight
-      }));
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [sort]);
+  
 
   const filteredVideos = useMemo(() => {
     let result = [...videos];
@@ -108,6 +70,13 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
     { v: SortOption.MOST_LIKED, l: 'Likes' }
   ];
 
+  const timeOptions = [
+    { v: TimeRange.ALL, l: '全部时间' },
+    { v: TimeRange.TODAY, l: '今天' },
+    { v: TimeRange.WEEK, l: '本周' },
+    { v: TimeRange.MONTH, l: '本月' }
+  ];
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* 置顶筛选区 */}
@@ -120,7 +89,7 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
           </div>
           <input
             type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg leading-5 bg-white dark:bg-gray-700 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm transition-all duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
+            className="block w-full pl-10 pr-3 h-[42px] border border-gray-200 dark:border-gray-700 rounded-lg leading-5 bg-white dark:bg-gray-700 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm transition-all duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
             placeholder="搜索创意、标签…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -129,40 +98,17 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
 
         {/* 筛选 */}
         <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-          <select 
+          <SegmentedControl
+            options={timeOptions.map(o => ({ value: o.v, label: o.l }))}
             value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-lg focus:outline-none focus:ring-primary focus:border-primary block p-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
-          >
-            <option value={TimeRange.ALL}>全部时间</option>
-            <option value={TimeRange.TODAY}>今天</option>
-            <option value={TimeRange.WEEK}>本周</option>
-            <option value={TimeRange.MONTH}>本月</option>
-          </select>
+            onChange={(v) => setTimeRange(v as TimeRange)}
+          />
 
-          <div 
-            ref={sortContainerRef}
-            className="relative flex bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
-          >
-            {/* 动态高亮背景 */}
-            <div 
-              className="absolute bg-blue-50 dark:bg-blue-900/30 pointer-events-none" 
-              style={highlightStyle}
-            />
-            
-            {sortOptions.map(opt => (
-              <button
-                key={opt.v}
-                ref={el => { sortBtnRefs.current[opt.v] = el }}
-                onClick={() => setSort(opt.v)}
-                className={`relative z-10 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  sort === opt.v ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-100'
-                }`}
-              >
-                {opt.v === SortOption.LATEST ? '最新' : opt.v === SortOption.MOST_VIEWED ? '热门' : '点赞数'}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={sortOptions.map(o => ({ value: o.v, label: o.v === SortOption.LATEST ? '最新' : o.v === SortOption.MOST_VIEWED ? '热门' : '点赞数' }))}
+            value={sort}
+            onChange={(v) => setSort(v as SortOption)}
+          />
         </div>
       </div>
 

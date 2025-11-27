@@ -4,8 +4,8 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 // index.ts
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 serve(async (req) => {
     try {
@@ -37,7 +37,7 @@ serve(async (req) => {
 
         // 4. 执行文件批量删除
         const { error: deleteError } = await supabaseAdmin.storage
-            .from('IdeaUploads') // 替换为你实际的 Bucket 名称
+            .from('IdeaUploads')
             .remove(pathsToDelete)
 
         if (deleteError) {
