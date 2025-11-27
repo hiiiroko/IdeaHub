@@ -1,14 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { EditIcon, TrashIcon, PlayIcon, EyeIcon } from '../components/Icons';
+
 import { ConfirmModal } from '../components/ConfirmModal';
-import { deleteVideo as deleteVideoSvc, fetchVideos } from '../services/video';
-import { toastSuccess } from '../services/utils';
-import { toUiVideo } from '../services/adapters';
-import { getCurrentUserProfile } from '../services/auth';
 import { EditVideoModal } from '../components/EditVideoModal';
 import { FiltersBar } from '../components/FiltersBar';
+import { EditIcon, TrashIcon, PlayIcon, EyeIcon } from '../components/Icons';
+import { useApp } from '../context/AppContext';
+import { toUiVideo } from '../services/adapters';
+import { getCurrentUserProfile } from '../services/auth';
+import { toastSuccess } from '../services/utils';
+import { deleteVideo as deleteVideoSvc, fetchVideos } from '../services/video';
 import { SortOption, TimeRange } from '../types';
+
+import DashboardCharts from '@/components/DashboardCharts';
 
 export const Manage: React.FC = () => {
   const { currentUser, videos, deleteVideo } = useApp();
@@ -19,6 +22,7 @@ export const Manage: React.FC = () => {
   const [sort, setSort] = useState<SortOption>(SortOption.LATEST)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
+  const [chartsPreviewOpen, setChartsPreviewOpen] = useState(false)
 
   const myVideos = videos.filter(v => v.uploaderId === currentUser?.id);
   const filteredMyVideos = useMemo(() => {
@@ -64,11 +68,19 @@ export const Manage: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">我的视频</h1>
-            <span className="bg-blue-50 dark:bg-blue-900/20 text-primary px-3 py-1 rounded-full text-sm font-medium">
+            <div className="flex items-center">
+              <button
+                type="button"
+                className="mr-3 px-3 py-1 rounded-full text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
+                onClick={() => setChartsPreviewOpen(true)}
+              >
+                查看视图
+              </button>
+              <span className="bg-blue-50 dark:bg-blue-900/20 text-primary px-3 py-1 rounded-full text-sm font-medium">
                 {filteredMyVideos.length} 条结果
-            </span>
+              </span>
+            </div>
         </div>
-
         <FiltersBar
           timeRange={timeRange}
           sort={sort}
@@ -153,6 +165,22 @@ export const Manage: React.FC = () => {
             </div>
         </div>
     </div>
+    {chartsPreviewOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="relative w-full max-w-5xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+          <button
+            onClick={() => setChartsPreviewOpen(false)}
+            className="absolute top-3 right-3 z-10 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+          <div className="p-4">
+            <DashboardCharts />
+          </div>
+        </div>
+      </div>
+    )}
     {pendingDeleteId && (
       <ConfirmModal
         title="删除视频"

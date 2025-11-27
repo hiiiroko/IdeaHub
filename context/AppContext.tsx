@@ -1,9 +1,11 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { User, Video, Comment } from '../types.ts';
-import { fetchVideos } from '../services/video';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+
+import { toUiVideo } from '../services/adapters';
 import { getCurrentUserProfile, loginUser, registerUser, logoutUser } from '../services/auth';
 import { toggleLikeVideo, sendComment, incrementViewCount } from '../services/interaction';
-import { toUiVideo } from '../services/adapters';
+import { fetchVideos } from '../services/video';
+import type { UserProfile } from '../types/index.ts'
+import { User, Video, Comment, SortOption } from '../types.ts';
 
 /**
  * 应用上下文（AppContext）模块
@@ -83,26 +85,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 1 尝试获取当前用户信息（含点赞过的视频 ID 列表）
       try {
         const profile = await getCurrentUserProfile().catch(() => null)
-        let likedIds: string[] = []
+        const likedIds = profile ? profile.liked_video_ids || [] : []
         if (profile) {
-          likedIds = profile.liked_video_ids || []
-          // 将鉴权返回的基本字段映射到 UI 用户结构
-          setCurrentUser({
-            id: profile.id,
-            email: '',
-            username: profile.username,
-            uid: profile.uid,
-            avatar: undefined,
-            createdAt: ''
-          })
+          setCurrentUser(mapProfileToUser(profile))
         }
-        // 2 拉取视频列表并按点赞数据映射到 UI 结构
         try {
-          const list = await fetchVideos('latest')
+          const list = await fetchVideos(SortOption.LATEST)
           const uiList = list.map(v => toUiVideo(v, likedIds))
           setVideos(uiList)
         } catch {
-          // 拉取失败兜底为空列表，避免页面崩溃
           setVideos([])
         }
       } finally {
@@ -121,14 +112,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const login = useCallback(async () => {
     const profile = await getCurrentUserProfile().catch(() => null)
     if (profile) {
-      setCurrentUser({
-        id: profile.id,
-        email: '',
-        username: profile.username,
-        uid: profile.uid,
-        avatar: undefined,
-        createdAt: ''
-      })
+      setCurrentUser(mapProfileToUser(profile))
       const likedIds = profile.liked_video_ids || []
       setVideos(prev => prev.map(v => ({ ...v, isLiked: likedIds.includes(v.id) })))
     }
@@ -168,11 +152,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * @remarks 先本地切换 `isLiked` 与计数，再调用后端；若失败则回滚。
    */
   const toggleLike = useCallback(async (videoId: string) => {
-    setVideos(prev => prev.map(v => v.id === videoId ? { ...v, isLiked: !v.isLiked, likeCount: !v.isLiked ? v.likeCount + 1 : Math.max(0, v.likeCount - 1) } : v))
+    setVideos(prev => toggleLikeInList(prev, videoId))
     try {
       await toggleLikeVideo(videoId)
     } catch {
-      setVideos(prev => prev.map(v => v.id === videoId ? { ...v, isLiked: !v.isLiked, likeCount: !v.isLiked ? v.likeCount + 1 : Math.max(0, v.likeCount - 1) } : v))
+      setVideos(prev => toggleLikeInList(prev, videoId))
     }
   }, [])
 
@@ -226,9 +210,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    */
   const authLogin = useCallback(async (email: string, password: string) => {
     setIsAuthLoading(true)
-    await loginUser(email, password)
-    await login()
-    setIsAuthLoading(false)
+    try {
+      await loginUser(email, password)
+      await login()
+    } finally {
+      setIsAuthLoading(false)
+    }
   }, [login])
 
   /**
@@ -250,7 +237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const profile = await getCurrentUserProfile().catch(() => null)
       const likedIds = profile ? profile.liked_video_ids || [] : []
-      const list = await fetchVideos('latest')
+      const list = await fetchVideos(SortOption.LATEST)
       const uiList = list.map(v => toUiVideo(v, likedIds))
       setVideos(uiList)
     } finally {
@@ -258,29 +245,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [])
 
+  const value = useMemo(() => ({
+    currentUser,
+    videos,
+    isLoading,
+    isAuthLoading,
+    theme,
+    login,
+    logout,
+    addVideo,
+    deleteVideo,
+    updateVideo,
+    toggleLike,
+    addComment,
+    incrementView,
+    authLogin,
+    authRegister,
+    refreshVideos,
+    toggleTheme,
+    setTheme
+  }), [
+    currentUser,
+    videos,
+    isLoading,
+    isAuthLoading,
+    theme,
+    login,
+    logout,
+    addVideo,
+    deleteVideo,
+    updateVideo,
+    toggleLike,
+    addComment,
+    incrementView,
+    authLogin,
+    authRegister,
+    refreshVideos,
+    toggleTheme,
+    setTheme
+  ])
+
   return (
-    <AppContext.Provider
-      value={{
-        currentUser,
-        videos,
-        isLoading,
-        isAuthLoading,
-        theme,
-        login,
-        logout,
-        addVideo,
-        deleteVideo,
-        updateVideo,
-        toggleLike,
-        addComment,
-        incrementView
-        ,authLogin
-        ,authRegister
-        ,refreshVideos
-        ,toggleTheme
-        ,setTheme
-      }}
-    >
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );
@@ -297,3 +303,20 @@ export const useApp = () => {
   }
   return context;
 };
+
+function mapProfileToUser(profile: UserProfile): User {
+  return {
+    id: profile.id,
+    email: '',
+    username: profile.username,
+    uid: profile.uid,
+    avatar: undefined,
+    createdAt: ''
+  }
+}
+
+function toggleLikeInList(prev: Video[], videoId: string): Video[] {
+  return prev.map(v => v.id === videoId
+    ? { ...v, isLiked: !v.isLiked, likeCount: !v.isLiked ? v.likeCount + 1 : Math.max(0, v.likeCount - 1) }
+    : v)
+}
