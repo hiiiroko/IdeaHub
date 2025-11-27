@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+
 import { supabase } from '../lib/supabase'
 import type { GenerateVideoParams, VideoGenerationStatus } from '../types/video'
 
@@ -17,6 +18,9 @@ export const useVideoGeneration = () => {
   const [videoUrl, setVideoUrl] = useState<string>('')
   const pollTimer = useRef<number | null>(null)
   const [taskId, setTaskId] = useState<string>('')
+  const inFlightRef = useRef(false)
+  const terminalRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const create = useCallback(async (params: GenerateVideoParams) => {
     setError(null)
@@ -47,6 +51,7 @@ export const useVideoGeneration = () => {
 
   const poll = useCallback(async (taskIdArg?: string) => {
     setError(null)
+    terminalRef.current = false
     const effectiveId = taskIdArg || taskId
     if (!effectiveId) throw new Error('任务未创建')
     const headers = await getHeaders()
@@ -57,16 +62,44 @@ export const useVideoGeneration = () => {
     return new Promise<VideoGenerationStatus>((resolve, reject) => {
       let elapsed = 0
       let attempt = 0
-      const tick = async () => {
+      let stopped = false
+
+      const run = async () => {
+        if (stopped || terminalRef.current) return
+        if (videoUrl) {
+          terminalRef.current = true
+          stopped = true
+          if (pollTimer.current) {
+            clearTimeout(pollTimer.current)
+            pollTimer.current = null
+          }
+          return
+        }
         try {
+          if (inFlightRef.current) return
+          inFlightRef.current = true
+          abortControllerRef.current?.abort()
+          abortControllerRef.current = new AbortController()
           attempt += 1
           const res = await fetch(url.toString(), {
             method: 'POST', headers,
-            body: JSON.stringify({ action: 'query', taskId: effectiveId })
+            body: JSON.stringify({ action: 'query', taskId: effectiveId }),
+            signal: abortControllerRef.current.signal
           })
           if (!res.ok) {
             const text = await res.text()
             console.error('[useVideoGeneration] poll → non-ok:', res.status, text)
+            if (videoUrl) {
+              stopped = true
+              terminalRef.current = true
+              if (pollTimer.current) {
+                clearTimeout(pollTimer.current)
+                pollTimer.current = null
+              }
+              abortControllerRef.current?.abort()
+              resolve({ id: effectiveId, status: 'succeeded', content: { video_url: videoUrl } })
+              return
+            }
             throw new Error(`query failed: ${res.status} ${text}`)
           }
           const json = await res.json() as VideoGenerationStatus
@@ -74,29 +107,63 @@ export const useVideoGeneration = () => {
           if (json.status === 'succeeded' && json.content?.video_url) {
             setVideoUrl(json.content.video_url)
             console.log('[useVideoGeneration] poll → succeeded video_url:', json.content.video_url)
-            clearInterval(pollTimer.current!)
-            resolve(json)
-          } else if (json.status === 'failed') {
-            clearInterval(pollTimer.current!)
-            setError(json.error || '生成失败')
-            reject(new Error(json.error || '生成失败'))
-          } else {
-            elapsed += 2000
-            if (elapsed >= 120000) {
-              clearInterval(pollTimer.current!)
-              setError('生成超时')
-              reject(new Error('生成超时'))
+            stopped = true
+            terminalRef.current = true
+            if (pollTimer.current) {
+              clearTimeout(pollTimer.current)
+              pollTimer.current = null
             }
+            abortControllerRef.current?.abort()
+            resolve(json)
+            return
+          }
+          if (json.status === 'failed') {
+            stopped = true
+            terminalRef.current = true
+            if (pollTimer.current) {
+              clearTimeout(pollTimer.current)
+              pollTimer.current = null
+            }
+            setError(json.error || '生成失败')
+            abortControllerRef.current?.abort()
+            reject(new Error(json.error || '生成失败'))
+            return
+          }
+          elapsed += 2000
+          if (elapsed >= 120000) {
+            stopped = true
+            terminalRef.current = true
+            if (pollTimer.current) {
+              clearTimeout(pollTimer.current)
+              pollTimer.current = null
+            }
+            setError('生成超时')
+            abortControllerRef.current?.abort()
+            reject(new Error('生成超时'))
+            return
           }
         } catch (e: any) {
-          clearInterval(pollTimer.current!)
+          stopped = true
+          terminalRef.current = true
+          if (pollTimer.current) {
+            clearTimeout(pollTimer.current)
+            pollTimer.current = null
+          }
           setError(e?.message || '生成失败')
           console.error('[useVideoGeneration] poll → error:', e)
+          abortControllerRef.current?.abort()
           reject(e)
+          return
+        } finally {
+          inFlightRef.current = false
         }
+        const baseDelay = 2000
+        const maxDelay = 10000
+        const nextDelay = Math.min(baseDelay * Math.pow(2, Math.min(attempt, 3)), maxDelay)
+        pollTimer.current = window.setTimeout(run, nextDelay)
       }
-      pollTimer.current = window.setInterval(tick, 2000)
-      tick()
+
+      run()
     })
   }, [taskId])
 
@@ -105,7 +172,12 @@ export const useVideoGeneration = () => {
     setError(null)
     setVideoUrl('')
     setTaskId('')
-    if (pollTimer.current) clearInterval(pollTimer.current)
+    if (pollTimer.current) clearTimeout(pollTimer.current)
+    pollTimer.current = null
+    terminalRef.current = false
+    inFlightRef.current = false
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
   }, [])
 
   return { create, poll, loading, error, videoUrl, taskId, reset }

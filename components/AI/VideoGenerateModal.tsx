@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { GenerateVideoParams } from '../../types/video'
-import { useVideoGeneration } from '../../hooks/useVideoGeneration'
+
 import { useUploadToBucket } from '../../hooks/useUploadToBucket'
-import { VideoPreview } from './VideoPreview'
+import { useVideoGeneration } from '../../hooks/useVideoGeneration'
 import { toastError, toastSuccess } from '../../services/utils'
+import type { GenerateVideoParams } from '../../types/video'
+import { SegmentedControl } from '../SegmentedControl'
+
+import { VideoPreview } from './VideoPreview'
+
 
 export const VideoGenerateModal: React.FC<{
   open: boolean
@@ -28,8 +32,8 @@ export const VideoGenerateModal: React.FC<{
       onStart && onStart(params)
       const { id } = await create(params)
       console.log('[VideoGenerateModal] start → created id:', id)
-      await poll(id)
-      console.log('[VideoGenerateModal] start → poll succeeded, videoUrl:', videoUrl)
+      const status = await poll(id)
+      console.log('[VideoGenerateModal] start → poll succeeded, videoUrl:', status.content?.video_url)
     } catch (e: any) {
       toastError(e?.message || '生成失败')
       console.error('[VideoGenerateModal] start → error:', e)
@@ -104,16 +108,28 @@ export const VideoGenerateModal: React.FC<{
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs text-gray-500 dark:text-gray-400">分辨率</label>
-                <select value={params.resolution} onChange={(e)=>setParams({...params,resolution:e.target.value as any})} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg focus:outline-none focus:ring-primary focus:border-primary block p-2.5 w-full">
-                  <option value="480p">480P（标清）</option>
-                  <option value="720p">720P（高清）</option>
-                </select>
+                <SegmentedControl
+                  options={[
+                    { value: '480p', label: '480P（标清）' },
+                    { value: '720p', label: '720P（高清）' }
+                  ]}
+                  value={params.resolution}
+                  onChange={(v)=>setParams({ ...params, resolution: v as any })}
+                  size="sm"
+                  disabled={generating || saving}
+                  ariaLabel="分辨率"
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-gray-500 dark:text-gray-400">画面比例</label>
-                <select value={params.ratio} onChange={(e)=>setParams({...params,ratio:e.target.value as any})} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg focus:outline-none focus:ring-primary focus:border-primary block p-2.5 w-full">
-                  {['16:9','4:3','1:1','3:4','9:16','21:9'].map(r=> <option key={r} value={r}>{r}</option>)}
-                </select>
+                <SegmentedControl
+                  options={['16:9','4:3','1:1','3:4','9:16','21:9'].map(r => ({ value: r, label: r }))}
+                  value={params.ratio}
+                  onChange={(v)=>setParams({ ...params, ratio: v as any })}
+                  size="sm"
+                  disabled={generating || saving}
+                  ariaLabel="画面比例"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 items-end">
@@ -123,10 +139,17 @@ export const VideoGenerateModal: React.FC<{
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-gray-500 dark:text-gray-400">帧率</label>
-                <select value={params.fps} onChange={(e)=>setParams({...params,fps:Number(e.target.value) as any})} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg focus:outline-none focus:ring-primary focus:border-primary block p-2.5 w-full">
-                  <option value={16}>16 FPS</option>
-                  <option value={24}>24 FPS</option>
-                </select>
+                <SegmentedControl
+                  options={[
+                    { value: 16, label: '16 FPS' },
+                    { value: 24, label: '24 FPS' }
+                  ]}
+                  value={params.fps}
+                  onChange={(v)=>setParams({ ...params, fps: v as any })}
+                  size="sm"
+                  disabled={generating || saving}
+                  ariaLabel="帧率"
+                />
               </div>
             </div>
           </div>
