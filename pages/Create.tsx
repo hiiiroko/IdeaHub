@@ -1,13 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { useApp } from '../context/AppContext';
+import React, { useState } from 'react';
+
+import { VideoGenerateModal } from '../components/AI/VideoGenerateModal';
 import { UploadIcon, PlayIcon } from '../components/Icons';
-import { Video } from '../types';
-import { getVideoDuration } from '../services/video';
-import { uploadVideo, fetchVideoById } from '../services/video';
-import { publishGeneratedVideoFromUrl, getVideoDurationFromUrl } from '../services/video';
+import { useApp } from '../context/AppContext';
 import { toUiVideo } from '../services/adapters';
 import { parseTags, toastError, toastSuccess } from '../services/utils';
-import { VideoGenerateModal } from '../components/AI/VideoGenerateModal';
+import { uploadVideo, fetchVideoById } from '../services/video';
+import { publishGeneratedVideoFromUrl } from '../services/video';
+import { Video } from '../types';
+import { getVideoDuration } from '../utils/media';
+import { getVideoDurationFromUrl } from '../utils/media';
 
 export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const { currentUser, addVideo, updateVideo } = useApp();
@@ -45,7 +47,7 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
   const [aiOpen, setAiOpen] = useState(false)
   const [aiVideoUrl, setAiVideoUrl] = useState('')
   const [aiGenerating, setAiGenerating] = useState(false)
-  const [aiRatio, setAiRatio] = useState<'16:9' | '4:3' | '1:1' | '3:4' | '9:16' | '21:9'>('16:9')
+  
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'video' | 'cover') => {
@@ -187,8 +189,8 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
                             <p className="text-sm text-gray-500 dark:text-gray-400">点击上传视频</p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">MP4 不超过 15MB</p>
                             {aiGenerating && (
-                              <div className="w-full flex items-center justify-center mt-2">
-                                <div className="aigc-skeleton rounded-lg overflow-hidden flex items-center justify-center" style={{ aspectRatio: aiRatio.replace(':','/') }}>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="aigc-skeleton w-11/12 h-5/6 rounded-lg flex items-center justify-center">
                                   <div className="aigc-spinner"></div>
                                 </div>
                               </div>
@@ -354,7 +356,7 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
       .aigc-spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.6);border-top-color:#22d3ee;border-right-color:#ef4444;border-radius:50%;animation:spin 1s linear infinite}
       @keyframes spin{to{transform:rotate(360deg)}}
       `}</style>
-      <VideoGenerateModal open={aiOpen} onClose={() => setAiOpen(false)} onSaved={onAiSaved} onStart={(p)=>{ setAiGenerating(true); setAiRatio(p.ratio) }} onReset={()=> setAiGenerating(false)} />
+      <VideoGenerateModal open={aiOpen} onClose={() => setAiOpen(false)} onSaved={onAiSaved} onStart={(p)=>{ setAiGenerating(true) }} onReset={()=> setAiGenerating(false)} />
     </div>
   );
 };

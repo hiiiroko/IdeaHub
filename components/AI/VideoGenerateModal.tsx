@@ -1,13 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
+import { VIDEO_RESOLUTIONS, VIDEO_RATIOS, VIDEO_FPS_OPTIONS, VIDEO_DURATIONS } from '../../constants/video'
 import { useUploadToBucket } from '../../hooks/useUploadToBucket'
 import { useVideoGeneration } from '../../hooks/useVideoGeneration'
 import { toastError, toastSuccess } from '../../services/utils'
 import type { GenerateVideoParams } from '../../types/video'
+import { captureFirstFrame } from '../../utils/media'
 import { SegmentedControl } from '../SegmentedControl'
 
 import { VideoPreview } from './VideoPreview'
-
 
 export const VideoGenerateModal: React.FC<{
   open: boolean
@@ -16,57 +17,35 @@ export const VideoGenerateModal: React.FC<{
   onStart?: (params: GenerateVideoParams) => void
   onReset?: () => void
 }> = ({ open, onClose, onSaved, onStart, onReset }) => {
-  const { create, poll, loading, error, videoUrl, taskId, reset } = useVideoGeneration()
+  const { create, poll, error, videoUrl, taskId, reset } = useVideoGeneration()
   const { saveToBucket } = useUploadToBucket()
-  const [params, setParams] = useState<GenerateVideoParams>({ prompt: '', resolution: '480p', ratio: '16:9', duration: 3, fps: 16 })
+  const [params, setParams] = useState<GenerateVideoParams>({ 
+    prompt: '', 
+    resolution: VIDEO_RESOLUTIONS[0].value, 
+    ratio: VIDEO_RATIOS[0].value, 
+    duration: VIDEO_DURATIONS.DEFAULT as 3|4|5, 
+    fps: VIDEO_FPS_OPTIONS[0].value as 16|24
+  })
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const videoRef = useRef<HTMLVideoElement | null>(null)
+  
 
   const start = async () => {
     if (!params.prompt.trim()) { toastError('请输入提示词'); return }
     try {
       setGenerating(true)
-      console.log('[VideoGenerateModal] start → params:', params)
-      onStart && onStart(params)
+      console.log('start → params:', params)
+      if (onStart) onStart(params)
       const { id } = await create(params)
-      console.log('[VideoGenerateModal] start → created id:', id)
+      console.log('start → created id:', id)
       const status = await poll(id)
-      console.log('[VideoGenerateModal] start → poll succeeded, videoUrl:', status.content?.video_url)
+      console.log('start → poll succeeded, videoUrl:', status.content?.video_url)
     } catch (e: any) {
       toastError(e?.message || '生成失败')
-      console.error('[VideoGenerateModal] start → error:', e)
+      console.error('start → error:', e)
       setGenerating(false)
     }
-  }
-
-  const captureFirstFrame = async (url: string): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const video = document.createElement('video')
-      video.crossOrigin = 'anonymous'
-      video.playsInline = true as any
-      video.src = url
-      video.onloadedmetadata = () => {
-        try {
-          video.currentTime = 0.001
-        } catch (e) {
-          console.warn('[VideoGenerateModal] seek to first frame failed', e)
-        }
-      }
-      video.onseeked = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        const ctx = canvas.getContext('2d')!
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob)
-          else reject(new Error('capture frame failed'))
-        }, 'image/jpeg')
-      }
-      video.onerror = () => reject(new Error('video load error'))
-    })
   }
 
   const save = async () => {
@@ -92,9 +71,9 @@ export const VideoGenerateModal: React.FC<{
       reset()
       setGenerating(false)
       setSaving(false)
-      onReset && onReset()
+      if (onReset) onReset()
     }
-  }, [open])
+  }, [open, reset, onReset])
 
   if (!open) return null
 
@@ -104,15 +83,19 @@ export const VideoGenerateModal: React.FC<{
         <div className="p-6 space-y-4">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">AI 生成视频</h3>
           <div className="space-y-3">
-            <textarea maxLength={200} value={params.prompt} onChange={(e)=>setParams({...params,prompt:e.target.value})} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="提示词（描述你希望生成的视频）" rows={3} />
+            <textarea 
+              maxLength={200} 
+              value={params.prompt} 
+              onChange={(e)=>setParams({...params,prompt:e.target.value})} 
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" 
+              placeholder="提示词（描述你希望生成的视频）" 
+              rows={3} 
+            />
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs text-gray-500 dark:text-gray-400">分辨率</label>
                 <SegmentedControl
-                  options={[
-                    { value: '480p', label: '480P（标清）' },
-                    { value: '720p', label: '720P（高清）' }
-                  ]}
+                  options={VIDEO_RESOLUTIONS}
                   value={params.resolution}
                   onChange={(v)=>setParams({ ...params, resolution: v as any })}
                   size="sm"
@@ -123,7 +106,7 @@ export const VideoGenerateModal: React.FC<{
               <div className="space-y-1">
                 <label className="text-xs text-gray-500 dark:text-gray-400">画面比例</label>
                 <SegmentedControl
-                  options={['16:9','4:3','1:1','3:4','9:16','21:9'].map(r => ({ value: r, label: r }))}
+                  options={VIDEO_RATIOS}
                   value={params.ratio}
                   onChange={(v)=>setParams({ ...params, ratio: v as any })}
                   size="sm"
@@ -135,15 +118,20 @@ export const VideoGenerateModal: React.FC<{
             <div className="grid grid-cols-2 gap-3 items-end">
               <div className="space-y-1">
                 <label className="text-xs text-gray-500 dark:text-gray-400">时长：{params.duration} 秒</label>
-                <input type="range" min={3} max={5} step={1} value={params.duration} onChange={(e)=>setParams({...params,duration:Number(e.target.value) as any})} className="w-full" />
+                <input 
+                  type="range" 
+                  min={VIDEO_DURATIONS.MIN} 
+                  max={VIDEO_DURATIONS.MAX} 
+                  step={VIDEO_DURATIONS.STEP} 
+                  value={params.duration} 
+                  onChange={(e)=>setParams({...params,duration:Number(e.target.value) as any})} 
+                  className="w-full" 
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-gray-500 dark:text-gray-400">帧率</label>
                 <SegmentedControl
-                  options={[
-                    { value: 16, label: '16 FPS' },
-                    { value: 24, label: '24 FPS' }
-                  ]}
+                  options={VIDEO_FPS_OPTIONS}
                   value={params.fps}
                   onChange={(v)=>setParams({ ...params, fps: v as any })}
                   size="sm"

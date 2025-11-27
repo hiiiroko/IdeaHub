@@ -1,50 +1,11 @@
-import { supabase } from '../lib/supabase'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
+
+import { supabase } from '../lib/supabase'
 import type { Video as DbVideo } from '../types/index.ts'
+import { getVideoDuration, getVideoDurationFromUrl, getImageAspectRatio } from '../utils/media'
 
 const BUCKET = (import.meta.env.VITE_SUPABASE_BUCKET as string) || 'IdeaUploads'
-
-export const getVideoDuration = (file: File): Promise<number> => {
-  return new Promise((resolve) => {
-    const element = document.createElement('video')
-    element.preload = 'metadata'
-    element.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(element.src)
-      resolve(Math.round(element.duration))
-    }
-    element.src = window.URL.createObjectURL(file)
-  })
-}
-
-export const getVideoDurationFromUrl = (url: string): Promise<number> => {
-  return new Promise((resolve) => {
-    const element = document.createElement('video')
-    element.preload = 'metadata'
-    element.onloadedmetadata = () => {
-      resolve(Math.round(element.duration))
-    }
-    element.src = url
-  })
-}
-
-/**
- * 获取图片的宽高比（宽度/高度）
- */
-export const getImageAspectRatio = (file: File): Promise<number> => {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => {
-      const ratio = img.width / img.height
-      URL.revokeObjectURL(img.src)
-      resolve(ratio)
-    }
-    img.onerror = () => {
-      resolve(1.77)
-    }
-    img.src = URL.createObjectURL(file)
-  })
-}
 
 export const fetchVideos = async (
   sortBy: 'latest' | 'popular' = 'latest',
@@ -155,7 +116,6 @@ export const publishGeneratedVideoFromUrl = async (
 ) => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('未登录')
-  const { data: coverUpload } = supabase.storage.from(BUCKET)
   const ext = cover.name.split('.').pop()
   const coverPath = `${user.id}/covers/${uuidv4()}.${ext}`
   const { error: coverErr } = await supabase.storage.from(BUCKET).upload(coverPath, cover)
@@ -225,3 +185,4 @@ export const deleteVideo = async (id: string, videoPath: string, coverPath: stri
     await supabase.storage.from(bucket).remove(files)
   }
 }
+export { getVideoDuration, getVideoDurationFromUrl } from '../utils/media'
