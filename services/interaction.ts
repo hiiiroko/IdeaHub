@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase'
 import type { Comment as DbComment } from '../types/index.ts'
 import type { Comment as UiComment } from '../types'
 import { toUiComment } from './adapters'
+import { v4 as uuidv4 } from 'uuid'
 
 export const toggleLikeVideo = async (videoId: string) => {
   const { error } = await supabase.rpc('toggle_like', { target_video_id: videoId })
@@ -22,7 +23,7 @@ export const sendComment = async (videoId: string, content: string, parentCommen
   })
 
   if (error) throw error
-  
+
   // Fetch the latest comment by this user on this video
   const { data: latestComment, error: fetchError } = await supabase
     .from('comments')
@@ -34,9 +35,9 @@ export const sendComment = async (videoId: string, content: string, parentCommen
     .single()
 
   if (fetchError || !latestComment) {
-     // Fallback optimistic
+     // Fallback optimistic with a UUID to keep reply flows working
      return {
-        id: 'temp-' + Date.now(),
+        id: uuidv4(),
         video_id: videoId,
         user_id: user.id,
         content,
@@ -109,4 +110,33 @@ export const fetchComments = async (videoId: string): Promise<UiComment[]> => {
   if (replyError) throw replyError
 
   return buildThreadedComments(videoId, parentList as DbComment[], (replies || []) as DbComment[])
+}
+
+export const fetchLikesForVideos = async (videoIds: string[]) => {
+  if (videoIds.length === 0) return {}
+
+  const { data: auth } = await supabase.auth.getUser()
+  const currentUserId = auth.user?.id ?? null
+
+  const { data, error } = await supabase
+    .from('video_likes')
+    .select('video_id, user_id')
+    .in('video_id', videoIds)
+
+  if (error) throw error
+
+  const result: Record<string, { count: number; isLiked: boolean }> = {}
+
+  for (const row of data || []) {
+    const vid = row.video_id as string
+    if (!result[vid]) {
+      result[vid] = { count: 0, isLiked: false }
+    }
+    result[vid].count += 1
+    if (currentUserId && row.user_id === currentUserId) {
+      result[vid].isLiked = true
+    }
+  }
+
+  return result
 }

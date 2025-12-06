@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { toUiVideo } from '../services/adapters';
-import { toggleLikeVideo, sendComment, incrementViewCount } from '../services/interaction';
+import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos } from '../services/interaction';
 import { fetchVideos } from '../services/video';
 import { User, Video, Comment, SortOption } from '../types.ts';
 
@@ -59,6 +59,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  /**
+   * 刷新视频列表并补全点赞状态
+   */
+  const refreshVideos = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const list = await fetchVideos(SortOption.LATEST);
+      const baseUiList = list.map(v => toUiVideo(v));
+      const videoIds = baseUiList.map(v => v.id);
+      const likeMap = await fetchLikesForVideos(videoIds);
+
+      const uiList = baseUiList.map(v => {
+        const likeInfo = likeMap[v.id] || { count: 0, isLiked: false };
+        return {
+          ...v,
+          likeCount: likeInfo.count,
+          isLiked: likeInfo.isLiked,
+        };
+      });
+
+      setVideos(uiList);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Sync auth loading state
   // useAuth manages its own loading, but AppContext exposed isAuthLoading
   // We initialize it to true in useAuth, so it matches.
@@ -67,14 +93,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const init = async () => {
       setIsLoading(true);
       setIsAuthLoading(true);
-      
+
       try {
         await fetchCurrentUser();
-
         try {
-          const list = await fetchVideos(SortOption.LATEST);
-          const uiList = list.map(v => toUiVideo(v));
-          setVideos(uiList);
+          await refreshVideos();
         } catch (e) {
           console.error('Failed to fetch videos', e);
           setVideos([]);
@@ -85,7 +108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
     void init();
-  }, [fetchCurrentUser, setIsAuthLoading]);
+  }, [fetchCurrentUser, setIsAuthLoading, refreshVideos]);
 
   /**
    * 登录后刷新当前用户与点赞状态
@@ -201,7 +224,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    */
   const authLogin = useCallback(async (email: string, password: string) => {
     await performLogin(email, password);
-  }, [performLogin]);
+    await refreshVideos();
+  }, [performLogin, refreshVideos]);
 
   /**
    * 账号注册
@@ -209,22 +233,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const authRegister = useCallback(async (email: string, password: string, username: string) => {
     await performRegister(email, password, username);
   }, [performRegister]);
-
-  /**
-   * 刷新视频列表
-   */
-  const refreshVideos = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // Re-fetch profile to get latest likes if needed, or use current user?
-      // Original logic fetched profile again.
-      const list = await fetchVideos(SortOption.LATEST);
-      const uiList = list.map(v => toUiVideo(v));
-      setVideos(uiList);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchCurrentUser]);
 
   const value = useMemo(() => ({
     currentUser,

@@ -30,8 +30,8 @@ export const VideoInfo: React.FC<VideoInfoProps> = ({
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {video.tags.map(tag => (
-          <span key={tag} className="px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-full">
+        {video.tags.map((tag, idx) => (
+          <span key={`${tag}-${idx}`} className="px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-full">
             #{tag}
           </span>
         ))}
