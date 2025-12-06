@@ -1,31 +1,40 @@
-import type { Video as DbVideo, Comment as DbComment } from '../types/index.ts'
+import { supabase } from '../lib/supabase'
+import type { Video as DbVideo, Comment as DbComment, Profile } from '../types/index.ts'
 import type { Video as UiVideo, User, Comment as UiComment } from '../types.ts'
 
-const toUiUser = (uploaderId: string, profile?: { username: string; uid: string }): User => {
+const BUCKET = (import.meta.env.VITE_SUPABASE_BUCKET as string) || 'IdeaUploads'
+
+const getPublicUrl = (path: string | null) => {
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  return data.publicUrl
+}
+
+const toUiUser = (uploaderId: string, profile?: Profile): User => {
   return {
     id: uploaderId,
-    email: '',
+    email: '', // Profile doesn't have email usually for privacy
     username: profile?.username || 'User',
-    uid: profile?.uid || '',
-    avatar: undefined,
-    createdAt: ''
+    uid: profile?.uid?.toString() || '',
+    avatar: profile?.avatar_url || undefined,
+    createdAt: profile?.created_at || ''
   }
 }
 
-const toUiComment = (videoId: string, c: DbComment): UiComment => {
+export const toUiComment = (videoId: string, c: DbComment): UiComment => {
   return {
-    id: c.cid,
+    id: c.id,
     content: c.content,
-    userId: c.uid,
+    userId: c.user_id,
     videoId,
     createdAt: c.created_at,
-    user: {
-      id: c.uid,
-      email: '',
-      username: c.username,
-      uid: c.uid,
-      avatar: undefined,
-      createdAt: ''
+    user: c.profiles ? toUiUser(c.user_id, c.profiles) : {
+        id: c.user_id,
+        email: '',
+        username: 'Unknown',
+        uid: '',
+        createdAt: ''
     }
   }
 }
@@ -36,18 +45,18 @@ export const toUiVideo = (v: DbVideo, likedIds?: string[]): UiVideo => {
     title: v.title,
     description: v.description || undefined,
     tags: v.tags || [],
-    videoUrl: v.video_path,
-    coverUrl: v.cover_path,
-    aspectRatio: (v as any).aspect_ratio ?? 1.77,
-    duration: (v as any).duration ?? 0,
+    videoUrl: getPublicUrl(v.video_path),
+    coverUrl: getPublicUrl(v.cover_path),
+    aspectRatio: v.aspect_ratio ?? 1.77,
+    duration: v.duration ?? 0,
     viewCount: v.view_count || 0,
     likeCount: v.like_count || 0,
-    commentCount: Array.isArray(v.comments) ? v.comments.length : 0,
+    commentCount: 0, // Comments are not fetched in list view usually
     createdAt: v.created_at,
-    updatedAt: v.created_at,
+    updatedAt: v.updated_at || v.created_at,
     uploaderId: v.uploader_id,
     uploader: toUiUser(v.uploader_id, v.profiles),
-    comments: Array.isArray(v.comments) ? v.comments.map(c => toUiComment(v.id, c)) : [],
+    comments: [], // Comments not fetched in list
     isLiked: likedIds ? likedIds.includes(v.id) : false
   }
   return ui

@@ -9,8 +9,26 @@ export interface GenerateVideoParams {
   fps?: 16 | 24
 }
 
+export interface VideoGenerationTask {
+  id: number
+  user_id: string
+  external_task_id: string
+  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'uploaded'
+  prompt: string
+  resolution: string
+  ratio: string
+  duration: number
+  fps: number | null
+  video_url: string | null
+  last_frame_url: string | null
+  error_message: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Keep this for compatibility if needed, or map to VideoGenerationTask
 export interface VideoGenerationStatus {
-  id: string
+  id: string // This might map to external_task_id or id
   status: 'pending' | 'processing' | 'succeeded' | 'failed'
   content?: { video_url: string }
   error?: string

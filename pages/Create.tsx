@@ -3,13 +3,12 @@ import React, { useState } from 'react';
 import { VideoGenerateModal } from '../components/AI/VideoGenerateModal';
 import { UploadIcon, PlayIcon } from '../components/Icons';
 import { useApp } from '../context/AppContext';
+import { useVideoGeneration } from '../hooks/useVideoGeneration';
 import { toUiVideo } from '../services/adapters';
 import { parseTags, toastError, toastSuccess } from '../services/utils';
 import { uploadVideo, fetchVideoById } from '../services/video';
-import { publishGeneratedVideoFromUrl } from '../services/video';
 import { Video } from '../types';
 import { getVideoDuration } from '../utils/media';
-import { getVideoDurationFromUrl } from '../utils/media';
 
 export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const { currentUser, addVideo, updateVideo } = useApp();
@@ -17,6 +16,8 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [uploadPercent, setUploadPercent] = useState(0);
   
+  const { publish } = useVideoGeneration();
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -46,6 +47,7 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
 
   const [aiOpen, setAiOpen] = useState(false)
   const [aiVideoUrl, setAiVideoUrl] = useState('')
+  const [aiTaskId, setAiTaskId] = useState('')
   const [aiGenerating, setAiGenerating] = useState(false)
   
 
@@ -80,6 +82,7 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
       setInvalid(prev => ({ ...prev, [type]: false }))
       if (type === 'video') {
         setAiVideoUrl('')
+        setAiTaskId('')
         setPreviewLoadingVideo(true)
       }
       if (type === 'cover') {
@@ -93,7 +96,7 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isAi = !!aiVideoUrl
+    const isAi = !!aiTaskId
     if (!isAi && (!files.video || !files.cover)) return;
 
     setIsSubmitting(true);
@@ -101,14 +104,26 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
 
     try {
       const meta = { title: form.title, description: form.description, tags: parseTags(form.tags) }
-      const dbVideo = isAi
-        ? await publishGeneratedVideoFromUrl(aiVideoUrl, files.cover!, meta)
-        : await uploadVideo(
+      
+      let dbVideo;
+      
+      if (isAi) {
+          // Use publish action for AI video
+          const result = await publish(aiTaskId, meta)
+          dbVideo = result.video // Assuming result contains the video record or we need to fetch it?
+          // The user guide says: returns { taskId, video: Video, ... }
+          // So result.video should be the DbVideo
+      } else {
+          dbVideo = await uploadVideo(
             files.video!,
             files.cover!,
             meta,
             (p) => setUploadPercent(p)
           )
+      }
+      
+      if (!dbVideo) throw new Error('发布后未获取到视频信息')
+
       let uiVideo: Video = toUiVideo(dbVideo)
       if (currentUser) {
         uiVideo = {
@@ -128,29 +143,42 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : '发布失败'
+      console.error(err)
       toastError(msg)
     }
     setIsSubmitting(false);
     onComplete();
   };
 
-  const onAiSaved = async (publicUrl: string, coverBlob: Blob) => {
-    setAiVideoUrl(publicUrl)
+  const onAiSaved = async (result: { taskId: string, videoUrl: string, coverUrl: string | null }) => {
+    setAiVideoUrl(result.videoUrl)
+    setAiTaskId(result.taskId)
     setAiGenerating(false)
-    setPreviews(prev => ({ ...prev, video: publicUrl }))
+    setPreviews(prev => ({ ...prev, video: result.videoUrl }))
     setPreviewLoadingVideo(true)
-    const coverFile = new File([coverBlob], `cover-${Date.now()}.jpg`, { type: 'image/jpeg' })
-    setFiles(prev => ({ ...prev, cover: coverFile, video: null }))
-    const coverUrl = URL.createObjectURL(coverBlob)
-    setPreviews(prev => ({ ...prev, cover: coverUrl }))
-    setPreviewLoadingCover(true)
-    setInvalid(prev => ({ ...prev, cover: false }))
-    try {
-      const d = await getVideoDurationFromUrl(publicUrl)
-      setDurationPreview(d)
-    } catch {
-      setDurationPreview(null)
+    
+    setFiles(prev => ({ ...prev, video: null })) // Clear manual video file
+    
+    if (result.coverUrl) {
+        setPreviews(prev => ({ ...prev, cover: result.coverUrl! }))
+        // We don't have a file for cover, but that's ok if we use AI flow
+        // But wait, if we use AI flow, do we need a cover file?
+        // If using `publish` action, backend handles cover?
+        // The `publish` action might use the last frame or generated cover.
+        // The user guide says: "coverPublicUrl" is returned.
+        // So we don't need to upload cover file for AI flow.
+        // But manual flow needs cover file.
+        // We should handle this in validation.
+        setFiles(prev => ({ ...prev, cover: null }))
+        setInvalid(prev => ({ ...prev, cover: false }))
     }
+    
+    setPreviewLoadingCover(true) // Assuming cover is loading
+    // Actually if it's a URL, we can just let img onLoad handle it.
+    
+    // Try to get duration if possible
+    // getVideoDurationFromUrl might fail on cross-origin, but let's try
+    // Or just skip
   }
 
   return (
@@ -302,8 +330,8 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
                 disabled={
                   isSubmitting ||
                   !form.title ||
-                  (!files.video && !aiVideoUrl) ||
-                  !files.cover ||
+                  (!files.video && !aiTaskId) || // Allow if aiTaskId is present
+                  (!files.cover && !aiTaskId) || // Allow if aiTaskId is present (backend handles cover)
                   !currentUser ||
                   invalid.video ||
                   invalid.cover

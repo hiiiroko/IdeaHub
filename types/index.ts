@@ -1,8 +1,9 @@
-export interface Comment {
-  cid: string
-  uid: string
-  username: string
-  content: string
+export interface Profile {
+  id: string
+  username: string | null
+  uid: number | null
+  avatar_url: string | null
+  bio: string | null
   created_at: string
 }
 
@@ -11,20 +12,39 @@ export interface Video {
   uploader_id: string
   title: string
   description: string | null
-  tags: string[]
+  tags: string[] | null
   video_path: string
-  cover_path: string
+  cover_path: string | null
+  duration: number
   aspect_ratio: number
-  view_count: number
-  like_count: number
-  comments: Comment[]
+  is_public: boolean
+  is_deleted: boolean
   created_at: string
-  profiles?: {
-    username: string
-    uid: string
-  }
+  updated_at: string
+  // Optional fields that might be joined or computed
+  profiles?: Profile
+  view_count?: number // Computed/fetched separately
+  like_count?: number // Computed/fetched separately
+  is_liked?: boolean // Computed/fetched separately
 }
 
+export interface Comment {
+  id: string
+  video_id: string
+  user_id: string
+  content: string
+  parent_comment_id: string | null
+  created_at: string
+  // Relations
+  profiles?: Profile
+}
+
+export interface CommentWithReplies extends Comment {
+  user: Profile // Mapped from profiles
+  replies: Array<Comment & { user: Profile }>
+}
+
+// Legacy support or UI specific interfaces
 export interface UserProfile {
   id: string
   username: string
