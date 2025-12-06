@@ -4,9 +4,8 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { EditVideoModal } from '../components/EditVideoModal';
 import { FiltersBar } from '../components/FiltersBar';
 import { useApp } from '../context/AppContext';
-import { getCurrentUserProfile } from '../services/auth';
 import { toastSuccess } from '../services/utils';
-import { deleteVideo as deleteVideoSvc, fetchVideos } from '../services/video';
+import { deleteVideo as deleteVideoSvc } from '../services/video';
 import { SortOption, TimeRange } from '../types';
 
 import DashboardCharts from '@/components/DashboardCharts';

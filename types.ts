@@ -14,6 +14,8 @@ export interface Comment {
   videoId: string;
   createdAt: string;
   user?: User; // Joined for UI convenience
+  parentId?: string | null;
+  replies?: Comment[];
 }
 
 export interface Video {

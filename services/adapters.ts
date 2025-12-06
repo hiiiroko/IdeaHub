@@ -12,11 +12,13 @@ const getPublicUrl = (path: string | null) => {
 }
 
 const toUiUser = (uploaderId: string, profile?: Profile): User => {
+  const fallbackName = profile?.username || '未命名用户'
+  const fallbackUid = profile?.uid != null ? profile.uid.toString() : uploaderId.slice(0, 8)
   return {
     id: uploaderId,
     email: '', // Profile doesn't have email usually for privacy
-    username: profile?.username || 'User',
-    uid: profile?.uid?.toString() || '',
+    username: fallbackName,
+    uid: fallbackUid,
     avatar: profile?.avatar_url || undefined,
     createdAt: profile?.created_at || ''
   }
@@ -29,17 +31,19 @@ export const toUiComment = (videoId: string, c: DbComment): UiComment => {
     userId: c.user_id,
     videoId,
     createdAt: c.created_at,
+    parentId: c.parent_comment_id,
     user: c.profiles ? toUiUser(c.user_id, c.profiles) : {
         id: c.user_id,
         email: '',
         username: 'Unknown',
-        uid: '',
-        createdAt: ''
+        uid: c.user_id.slice(0, 8),
+        avatar: undefined,
+        createdAt: '',
     }
   }
 }
 
-export const toUiVideo = (v: DbVideo, likedIds?: string[]): UiVideo => {
+export const toUiVideo = (v: DbVideo): UiVideo => {
   const ui: UiVideo = {
     id: v.id,
     title: v.title,
@@ -57,7 +61,8 @@ export const toUiVideo = (v: DbVideo, likedIds?: string[]): UiVideo => {
     uploaderId: v.uploader_id,
     uploader: toUiUser(v.uploader_id, v.profiles),
     comments: [], // Comments not fetched in list
-    isLiked: likedIds ? likedIds.includes(v.id) : false
+    commentCount: v.comment_count ?? 0,
+    isLiked: !!v.is_liked
   }
   return ui
 }

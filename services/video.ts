@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 
 import { supabase } from '../lib/supabase'
@@ -61,30 +60,17 @@ export const uploadVideo = async (
   const videoPath = `${user.id}/videos/${uuidv4()}.${videoExt}`
   const coverPath = `${user.id}/covers/${uuidv4()}.${coverExt}`
 
-  const uploadWithProgress = async (bucket: string, path: string, f: File, cb?: (p: number) => void) => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) throw new Error('未登录')
-    const token = session.access_token
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
-    const baseUrl = (supabaseUrl || '').replace(/\/$/, '')
-    const url = `${baseUrl}/storage/v1/object/${bucket}/${path}`
-    await axios.post(url, f, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': f.type,
-        'x-upsert': 'false'
-      },
-      onUploadProgress: (evt) => {
-        if (evt.total && cb) {
-          const percent = Math.round((evt.loaded / evt.total) * 100)
-          cb(percent)
-        }
-      }
-    })
-  }
+  // Upload video using supabase client (reliable auth & headers)
+  const { error: videoError } = await supabase.storage.from(BUCKET).upload(videoPath, file, {
+    contentType: file.type,
+    upsert: false
+  })
 
-  // Upload video with progress
-  await uploadWithProgress(BUCKET, videoPath, file, onProgress)
+  if (videoError) throw videoError
+
+  if (onProgress) {
+    onProgress(100)
+  }
   
   // Upload cover (no progress needed usually, it's small)
   const { error: coverError } = await supabase.storage.from(BUCKET).upload(coverPath, cover, {
