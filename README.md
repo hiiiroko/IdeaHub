@@ -54,7 +54,6 @@ pnpm preview
 VITE_SUPABASE_URL=[YOUR_VITE_SUPABASE_URL]
 VITE_SUPABASE_ANON_KEY=[YOUR_VITE_SUPABASE_ANON_KEY]
 VITE_SUPABASE_BUCKET=[YOUR_VITE_SUPABASE_BUCKET_NAME]
-VITE_GENERATE_FUNCTION_NAME=generate-video
 ```
 
 - 存储桶需存在且可公开读取；代码在 `services/video.ts:71` 对“未找到存储桶”进行了错误提示与引导。
@@ -102,7 +101,6 @@ VITE_GENERATE_FUNCTION_NAME=generate-video
 | `id`              | `uuid`        | 必填 | 主键             |
 | `uid`             | `integer`     | 必填 | 用户ID           |
 | `username`        | `text`        | 可选 | 用户名           |
-| `liked_video_ids` | `text[]`      | 可选 | 喜欢的视频ID数组 |
 | `created_at`      | `timestamptz` | 必填 | 创建时间         |
 
 #### videos 表
@@ -170,7 +168,7 @@ VITE_GENERATE_FUNCTION_NAME=generate-video
 ├─ components/                 # 组件库
 │  ├─ AI/                     # AI 生成视频相关组件（`VideoGenerateModal.tsx`）
 │  └─ ...
-├─ hooks/                      # 复用钩子（`useVideoGeneration.ts`、`useUploadToBucket.ts`）
+├─ hooks/                      # 复用钩子（`useVideoGeneration.ts` 等）
 ├─ pages/                      # 页面视图（`Discovery.tsx`、`Create.tsx`、`Detail.tsx` 等）
 ├─ context/                    # 应用上下文（`AppContext.tsx`）
 ├─ services/                   # 业务服务（`auth`、`video`、`utils`、`adapters`）

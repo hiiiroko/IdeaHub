@@ -1,8 +1,11 @@
 export const parseTags = (input: string): string[] => {
-  return (input || '')
+  const raw = (input || '')
     .split(/[，,；;。\.\s]+/)
     .map(t => t.trim())
     .filter(Boolean)
+
+  // 去重，保持顺序
+  return Array.from(new Set(raw))
 }
 
 import { toast } from 'react-hot-toast'

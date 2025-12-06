@@ -150,13 +150,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
         </div>
       ) : currentUser ? (
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
-          <div className="flex items-center gap-3 mb-3">
-             <FakeAvatar name={currentUser.username} size={40} />
-             <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{currentUser.username}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">ID: {currentUser.uid}</p>
-             </div>
-          </div>
+          {(() => {
+            const displayName = currentUser.username || '未命名用户'
+            const displayUid = currentUser.uid || currentUser.id?.slice(0, 8) || ''
+            return (
+              <div className="flex items-center gap-3 mb-3">
+                <FakeAvatar name={displayName} size={40} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{displayName}</p>
+                  {displayUid && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">ID: {displayUid}</p>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
           <button
             onClick={async () => { await logout(); onNavigate('discovery'); }}
             className="group w-full flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-md transition-colors"
