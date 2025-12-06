@@ -1,13 +1,12 @@
 import React from 'react'
 
-import { Video } from '../../types'
-import { UserProfile } from '../../types'
+import { User, Video } from '../../types'
 import { FakeAvatar } from '../FakeAvatar'
 import { EyeIcon, HeartIcon } from '../Icons'
 
 interface VideoInfoProps {
   video: Video
-  currentUser: UserProfile | null
+  currentUser: User | null
   onRequireAuth?: () => void
   toggleLike: (id: string) => void
 }

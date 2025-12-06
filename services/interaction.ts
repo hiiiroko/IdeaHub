@@ -1,5 +1,7 @@
 import { supabase } from '../lib/supabase'
-import type { Comment as DbComment, Profile } from '../types/index.ts'
+import type { Comment as DbComment } from '../types/index.ts'
+import type { Comment as UiComment } from '../types'
+import { toUiComment } from './adapters'
 
 export const toggleLikeVideo = async (videoId: string) => {
   const { error } = await supabase.rpc('toggle_like', { target_video_id: videoId })
@@ -58,8 +60,27 @@ export const incrementViewCount = async (videoId: string) => {
   await supabase.rpc('increment_view_count', { video_id: videoId })
 }
 
-export const fetchComments = async (videoId: string) => {
-  // 1. Fetch parent comments
+const buildThreadedComments = (videoId: string, parents: DbComment[], replies: DbComment[]): UiComment[] => {
+  const replyMap: Record<string, UiComment[]> = {}
+
+  for (const r of replies) {
+    if (!r.parent_comment_id) continue
+    const ui = toUiComment(videoId, r)
+    const list = replyMap[r.parent_comment_id] || (replyMap[r.parent_comment_id] = [])
+    list.push(ui)
+  }
+
+  return parents.map(p => {
+    const uiParent = toUiComment(videoId, p)
+    const children = replyMap[p.id] || []
+    return {
+      ...uiParent,
+      replies: children,
+    }
+  })
+}
+
+export const fetchComments = async (videoId: string): Promise<UiComment[]> => {
   const { data: parents, error: parentError } = await supabase
     .from('comments')
     .select(`
@@ -69,12 +90,13 @@ export const fetchComments = async (videoId: string) => {
     .eq('video_id', videoId)
     .is('parent_comment_id', null)
     .order('created_at', { ascending: false })
-  
-  if (parentError) throw parentError
-  if (!parents || parents.length === 0) return []
 
-  // 2. Fetch replies
-  const parentIds = parents.map(c => c.id)
+  if (parentError) throw parentError
+
+  const parentList = parents || []
+  if (parentList.length === 0) return []
+
+  const parentIds = parentList.map(c => c.id)
   const { data: replies, error: replyError } = await supabase
     .from('comments')
     .select(`
@@ -86,14 +108,5 @@ export const fetchComments = async (videoId: string) => {
 
   if (replyError) throw replyError
 
-  // 3. Assemble
-  // We can return flat list or nested.
-  // The UI might expect flat list or nested?
-  // `CommentList` usually expects a flat list or handles nesting.
-  // Let's check `CommentList`.
-  // For now, returning all comments (parents + replies) flat is usually easier if UI handles threading,
-  // or we can return them as is.
-  // The user guide says: "前端自己在内存里组装成...".
-  
-  return [...parents, ...(replies || [])] as unknown as DbComment[]
+  return buildThreadedComments(videoId, parentList as DbComment[], (replies || []) as DbComment[])
 }

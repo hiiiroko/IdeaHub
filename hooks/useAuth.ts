@@ -5,13 +5,16 @@ import type { UserProfile } from '../types/index.ts';
 import { User } from '../types.ts';
 
 function mapProfileToUser(profile: UserProfile): User {
+  const fallbackName = profile.username || '未命名用户'
+  const fallbackUid = profile.uid != null ? profile.uid.toString() : profile.id.slice(0, 8)
+
   return {
     id: profile.id,
     email: '',
-    username: profile.username,
-    uid: profile.uid,
-    avatar: undefined,
-    createdAt: ''
+    username: fallbackName,
+    uid: fallbackUid,
+    avatar: profile.avatar_url || undefined,
+    createdAt: profile.created_at || ''
   }
 }
 

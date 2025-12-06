@@ -5,8 +5,8 @@ import { CommentList } from '../components/Detail/CommentList';
 import { VideoInfo } from '../components/Detail/VideoInfo';
 import { VideoPlayer } from '../components/Detail/VideoPlayer';
 import { useApp } from '../context/AppContext';
-import { toUiComment } from '../services/adapters';
 import { fetchComments } from '../services/interaction';
+import type { Comment } from '../types';
 
 interface DetailProps {
   videoId: string;
@@ -20,6 +20,7 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
   const [commentSending, setCommentSending] = useState(false);
   const hasIncremented = useRef(false);
   const commentsFetched = useRef(false);
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
   
   const video = videos.find(v => v.id === videoId);
 
@@ -34,8 +35,7 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
       const loadComments = async () => {
           if (!videoId || commentsFetched.current) return;
           try {
-              const dbComments = await fetchComments(videoId);
-              const uiComments = dbComments.map(c => toUiComment(videoId, c));
+              const uiComments = await fetchComments(videoId);
               // Update context with fetched comments
               updateVideo(videoId, { comments: uiComments });
               commentsFetched.current = true;
@@ -59,8 +59,9 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
     if (!currentUser) { onRequireAuth && onRequireAuth(); return }
     setCommentSending(true);
     try {
-      await addComment(video.id, commentText);
+      await addComment(video.id, commentText, replyTo ? replyTo.id : null);
       setCommentText('');
+      setReplyTo(null);
     } finally {
       setCommentSending(false);
     }
@@ -89,14 +90,25 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
               toggleLike={toggleLike} 
             />
 
-            <CommentList comments={video.comments || []} />
+            <CommentList
+              comments={video.comments || []}
+              onReply={(comment) => {
+                if (!currentUser) {
+                  onRequireAuth && onRequireAuth();
+                  return;
+                }
+                setReplyTo(comment);
+              }}
+            />
 
-            <CommentInput 
+            <CommentInput
               commentText={commentText}
               setCommentText={setCommentText}
               commentSending={commentSending}
               onSubmit={handleComment}
               currentUser={currentUser}
+              replyToUsername={replyTo?.user?.username || null}
+              onCancelReply={() => setReplyTo(null)}
             />
          </div>
        </div>
