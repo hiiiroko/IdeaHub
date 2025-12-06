@@ -33,7 +33,7 @@ interface AppContextType extends AppState {
   deleteVideo: (id: string) => void;
   updateVideo: (id: string, data: Partial<Video>) => void;
   toggleLike: (videoId: string) => void;
-  addComment: (videoId: string, content: string) => void;
+  addComment: (videoId: string, content: string, parentId?: string | null) => void;
   incrementView: (videoId: string) => void;
   authLogin: (email: string, password: string) => Promise<void>;
   authRegister: (email: string, password: string, username: string) => Promise<void>;
@@ -69,12 +69,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsAuthLoading(true);
       
       try {
-        const profile = await fetchCurrentUser();
-        const likedIds = profile ? profile.liked_video_ids || [] : [];
-        
+        await fetchCurrentUser();
+
         try {
           const list = await fetchVideos(SortOption.LATEST);
-          const uiList = list.map(v => toUiVideo(v, likedIds));
+          const uiList = list.map(v => toUiVideo(v));
           setVideos(uiList);
         } catch (e) {
           console.error('Failed to fetch videos', e);
@@ -93,11 +92,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * Legacy login method exposed to context, essentially refreshes user data
    */
   const login = useCallback(async () => {
-    const profile = await fetchCurrentUser();
-    if (profile) {
-      const likedIds = profile.liked_video_ids || [];
-      setVideos(prev => prev.map(v => ({ ...v, isLiked: likedIds.includes(v.id) })));
-    }
+    await fetchCurrentUser();
   }, [fetchCurrentUser]);
 
   // 登出并重置与用户相关的本地状态
@@ -140,25 +135,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   /**
    * 发送评论并在本地拼接评论列表（头部追加）
    */
-  const addComment = useCallback(async (videoId: string, content: string) => {
+  const addComment = useCallback(async (videoId: string, content: string, parentId: string | null = null) => {
     if (!currentUser) return;
-    const created = await sendComment(videoId, content);
-    const uiComment: Comment = {
-      id: created.cid,
+    const created = await sendComment(videoId, content, parentId);
+    const baseComment: Comment = {
+      id: created.id,
       content: created.content,
-      userId: created.uid,
+      userId: created.user_id,
       videoId,
       createdAt: created.created_at,
+      parentId,
       user: {
-        id: created.uid,
-        email: '',
-        username: created.username,
-        uid: created.uid,
-        avatar: undefined,
-        createdAt: ''
-      }
+        id: currentUser.id,
+        email: currentUser.email,
+        username: currentUser.username,
+        uid: currentUser.uid,
+        avatar: currentUser.avatar,
+        createdAt: currentUser.createdAt,
+      },
+      replies: [],
     };
-    setVideos(prev => prev.map(v => v.id === videoId ? { ...v, commentCount: v.commentCount + 1, comments: [uiComment, ...(v.comments || [])] } : v));
+
+    setVideos(prev => prev.map(v => {
+      if (v.id !== videoId) return v;
+      const existingComments = v.comments || [];
+
+      if (!parentId) {
+        return {
+          ...v,
+          commentCount: (v.commentCount ?? 0) + 1,
+          comments: [baseComment, ...existingComments],
+        };
+      }
+
+      let attached = false;
+      const updatedComments = existingComments.map(c => {
+        if (c.id !== parentId) return c;
+        const replies = c.replies || [];
+        attached = true;
+        return {
+          ...c,
+          replies: [...replies, baseComment],
+        };
+      });
+
+      const finalComments = attached ? updatedComments : [baseComment, ...existingComments];
+
+      return {
+        ...v,
+        commentCount: (v.commentCount ?? 0) + 1,
+        comments: finalComments,
+      };
+    }));
   }, [currentUser]);
 
 
@@ -172,11 +200,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * 账号登录
    */
   const authLogin = useCallback(async (email: string, password: string) => {
-    const profile = await performLogin(email, password);
-    if (profile) {
-      const likedIds = profile.liked_video_ids || [];
-      setVideos(prev => prev.map(v => ({ ...v, isLiked: likedIds.includes(v.id) })));
-    }
+    await performLogin(email, password);
   }, [performLogin]);
 
   /**
@@ -194,10 +218,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       // Re-fetch profile to get latest likes if needed, or use current user?
       // Original logic fetched profile again.
-      const profile = await fetchCurrentUser(); 
-      const likedIds = profile ? profile.liked_video_ids || [] : [];
       const list = await fetchVideos(SortOption.LATEST);
-      const uiList = list.map(v => toUiVideo(v, likedIds));
+      const uiList = list.map(v => toUiVideo(v));
       setVideos(uiList);
     } finally {
       setIsLoading(false);

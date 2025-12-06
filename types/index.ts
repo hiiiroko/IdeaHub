@@ -26,6 +26,7 @@ export interface Video {
   view_count?: number // Computed/fetched separately
   like_count?: number // Computed/fetched separately
   is_liked?: boolean // Computed/fetched separately
+  comment_count?: number // Computed/fetched separately
 }
 
 export interface Comment {
@@ -45,9 +46,4 @@ export interface CommentWithReplies extends Comment {
 }
 
 // Legacy support or UI specific interfaces
-export interface UserProfile {
-  id: string
-  username: string
-  uid: string
-  liked_video_ids: string[]
-}
+export interface UserProfile extends Profile {}
