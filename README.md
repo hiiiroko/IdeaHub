@@ -96,12 +96,12 @@ VITE_SUPABASE_BUCKET=[YOUR_VITE_SUPABASE_BUCKET_NAME]
 
 #### profiles 表
 
-| 字段              | 类型          | 约束 | 说明             |
-| ----------------- | ------------- | ---- | ---------------- |
-| `id`              | `uuid`        | 必填 | 主键             |
-| `uid`             | `integer`     | 必填 | 用户ID           |
-| `username`        | `text`        | 可选 | 用户名           |
-| `created_at`      | `timestamptz` | 必填 | 创建时间         |
+| 字段         | 类型          | 约束 | 说明     |
+| ------------ | ------------- | ---- | -------- |
+| `id`         | `uuid`        | 必填 | 主键     |
+| `uid`        | `integer`     | 必填 | 用户ID   |
+| `username`   | `text`        | 可选 | 用户名   |
+| `created_at` | `timestamptz` | 必填 | 创建时间 |
 
 #### videos 表
 
@@ -147,7 +147,7 @@ VITE_SUPABASE_BUCKET=[YOUR_VITE_SUPABASE_BUCKET_NAME]
   - `React` + `Vite`
   - 样式：`Tailwind CSS`（实用类样式）
   - 动画：`framer-motion`
-  - 通知：`react-hot-toast`
+- 通知：`react-hot-toast`
   - 上传进度：`axios`（直传存储时显示进度）
   - 状态管理：应用上下文（`context/AppContext.tsx`）
 - 后端（Supabase）：
@@ -198,3 +198,10 @@ VITE_SUPABASE_BUCKET=[YOUR_VITE_SUPABASE_BUCKET_NAME]
 - 支持视频录制
 - 根据简介生成视频封面
 - 无限滚动
+
+## 通知使用规范
+
+- 服务与库层不直接弹出 UI 通知，统一由调用方（组件或 hook）决定。
+- 使用 `utils/notify` 作为唯一通知入口，传入稳定 `id` 以去重或更新，默认 2 秒时间窗口去重。
+- 成功提示仅在事务最终状态完成时触发一次，中间步骤用进度条或轻提示。
+- 手动上传使用 `hooks/useUploadVideo`，AI 发布路径在页面层统一提示一次。

@@ -26,16 +26,18 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   return (
     <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
       {replyToUsername && (
-        <div className="flex items-center justify-between mb-2 text-xs text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-3 py-1.5 rounded-full">
-          <span>回复：{replyToUsername}</span>
-          <button
-            type="button"
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-100"
-            onClick={onCancelReply}
-            aria-label="取消回复"
-          >
-            ✕
-          </button>
+        <div className="mb-2">
+          <div className="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-300">
+            <span>回复：{replyToUsername}</span>
+            <button
+              type="button"
+              className="text-primary hover:underline"
+              onClick={onCancelReply}
+              aria-label="取消回复"
+            >
+              取消回复
+            </button>
+          </div>
         </div>
       )}
       <form onSubmit={onSubmit} className="relative">

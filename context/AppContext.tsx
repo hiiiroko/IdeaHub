@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import toast from 'react-hot-toast';
 
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { toUiVideo } from '../services/adapters';
-import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos, fetchComments } from '../services/interaction';
+import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos, fetchComments, fetchLikeStats, fetchLikeCountsForVideos } from '../services/interaction';
 import { fetchVideos } from '../services/video';
 import { User, Video, Comment, SortOption } from '../types.ts';
-import toast from 'react-hot-toast';
 
 /**
  * 应用上下文（AppContext）模块
@@ -79,6 +79,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }));
       }
 
+      const likeCounts = await fetchLikeCountsForVideos(videoIds)
+      if (Object.keys(likeCounts).length > 0) {
+        uiList = uiList.map(v => ({
+          ...v,
+          likeCount: likeCounts[v.id] ?? v.likeCount
+        }))
+      }
+
       setVideos(uiList);
     } finally {
       setIsLoading(false);
@@ -147,14 +155,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * 切换点赞状态（乐观更新 + 失败回滚）
    */
   const toggleLike = useCallback(async (videoId: string) => {
+    const snapshot = videos.find(v => v.id === videoId)
     setVideos(prev => toggleLikeInList(prev, videoId));
     try {
       await toggleLikeVideo(videoId);
-      toast.success('已更新点赞');
+      const stats = await fetchLikeStats(videoId)
+      setVideos(prev => prev.map(v => v.id === videoId ? { ...v, isLiked: stats.isLiked, likeCount: stats.likeCount } : v))
+      toast.success(stats.isLiked ? '点赞成功' : '已取消点赞');
     } catch (e) {
       console.error('toggleLike failed', e);
-      setVideos(prev => toggleLikeInList(prev, videoId));
-      toast.error('点赞操作失败');
+      if (snapshot) {
+        setVideos(prev => prev.map(v => v.id === videoId ? { ...v, isLiked: snapshot.isLiked, likeCount: snapshot.likeCount } : v))
+      } else {
+        setVideos(prev => toggleLikeInList(prev, videoId));
+      }
+      toast.error('点赞失败，请稍后重试');
     }
   }, []);
 

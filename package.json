@@ -28,6 +28,9 @@
     ]
   },
   "dependencies": {
+    "@fortawesome/free-regular-svg-icons": "^7.1.0",
+    "@fortawesome/free-solid-svg-icons": "^7.1.0",
+    "@fortawesome/react-fontawesome": "^3.1.1",
     "@supabase/supabase-js": "^2.84.0",
     "@types/uuid": "^10.0.0",
     "axios": "^1.13.2",

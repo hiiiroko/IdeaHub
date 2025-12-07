@@ -8,8 +8,8 @@ export const parseTags = (input: string): string[] => {
   return Array.from(new Set(raw))
 }
 
-import { toast } from 'react-hot-toast'
+import { notifyError, notifySuccess, notifyInfo } from '../utils/notify'
 
-export const toastError = (msg: string) => toast.error(msg)
-export const toastSuccess = (msg: string) => toast.success(msg)
-export const toastInfo = (msg: string) => toast(msg)
+export const toastError = (msg: string) => notifyError(msg)
+export const toastSuccess = (msg: string) => notifySuccess(msg)
+export const toastInfo = (msg: string) => notifyInfo(msg)

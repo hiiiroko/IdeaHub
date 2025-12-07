@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid'
 import toast from 'react-hot-toast'
+import { v4 as uuidv4 } from 'uuid'
 
 import { supabase } from '../lib/supabase'
 import type { Video as DbVideo } from '../types/index.ts'
@@ -51,7 +51,8 @@ export const uploadVideo = async (
   file: File,
   cover: File,
   meta: { title: string; description: string; tags: string[] },
-  onProgress?: (percent: number) => void
+  onProgress?: (percent: number) => void,
+  silent: boolean = false
 ) => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('未登录')
@@ -104,14 +105,18 @@ export const uploadVideo = async (
       .single()
 
     if (error) throw error
-    toast.success('视频上传成功')
+    if (!silent) {
+      toast.success('视频上传成功')
+    }
     return data as unknown as DbVideo
   } catch (err: any) {
     const message: string = err?.message || ''
-    if (/row-level security/i.test(message) || /RLS/i.test(message)) {
-      toast.error('当前用户无权上传到该存储桶，请联系管理员调整 Supabase RLS 策略')
-    } else {
-      toast.error(message || '上传失败')
+    if (!silent) {
+      if (/row-level security/i.test(message) || /RLS/i.test(message)) {
+        toast.error('当前用户无权上传到该存储桶，请联系管理员调整 Supabase RLS 策略')
+      } else {
+        toast.error(message || '上传失败')
+      }
     }
     throw err
   }

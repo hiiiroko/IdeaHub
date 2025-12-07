@@ -5,6 +5,7 @@ import { FakeAvatar } from '../FakeAvatar'
 
 interface CommentListProps {
   comments: Comment[]
+  loading?: boolean
   onReply?: (comment: Comment) => void
 }
 
@@ -18,30 +19,55 @@ const formatCommentTime = (iso: string) => {
   })
 }
 
-export const CommentList: React.FC<CommentListProps> = ({ comments, onReply }) => {
-  const totalCount = (comments || []).reduce((acc, cur) => acc + 1 + (cur.replies?.length || 0), 0)
+import { CommentSkeleton } from './CommentSkeleton'
+export const CommentList: React.FC<CommentListProps> = ({ comments, loading = false, onReply }) => {
+  const byId = new Map<string, any>()
+  for (const c of comments || []) byId.set((c as any).id, c)
+
+  const isTop = (c: any) => !c.parentId
+  const topLevel = [...(comments || [])]
+    .filter(isTop)
+    .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+
+  const findRootId = (c: any): string => {
+    let cur: any = c
+    while (cur && cur.parentId) {
+      const parent = byId.get(cur.parentId)
+      if (!parent) break
+      cur = parent
+    }
+    return cur?.id || c.id
+  }
+
+  const repliesByRoot = new Map<string, any[]>()
+  for (const c of (comments || []).filter((x: any) => !!x.parentId)) {
+    const rootId = findRootId(c)
+    if (!repliesByRoot.has(rootId)) repliesByRoot.set(rootId, [])
+    repliesByRoot.get(rootId)!.push(c)
+  }
+  for (const [, list] of repliesByRoot) {
+    list.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  }
+
+  const totalCount = (comments || []).length
 
   const renderComment = (comment: Comment, isReply = false) => (
     <div key={comment.id} className={`flex gap-3 ${isReply ? 'text-sm' : ''}`}>
-      <FakeAvatar name={comment.user?.username || 'U'} size={isReply ? 28 : 32} />
+      <FakeAvatar name={comment.user?.username || 'U'} size={isReply ? 24 : 32} />
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
           <p className="text-xs font-bold text-gray-900 dark:text-gray-100">{comment.user?.username || '用户'}</p>
-          <span className="text-xs text-gray-400">
-            {formatCommentTime(comment.createdAt)}
-          </span>
         </div>
-        <div className="inline-block max-w-[85%] bg-gray-50 dark:bg-gray-700 pl-4 pr-4 py-2 rounded-2xl rounded-tl-none break-words">
-          <p className="m-0 text-sm leading-snug text-gray-700 dark:text-gray-200 whitespace-pre-wrap text-pretty">{comment.content}</p>
-          <div className="mt-2 flex items-center gap-3 text-xs text-gray-400">
-            <button
-              type="button"
-              className="hover:text-primary transition-colors"
-              onClick={() => onReply && onReply(comment)}
-            >
-              回复
-            </button>
-          </div>
+        <p className="m-0 text-sm leading-snug text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words text-pretty">{comment.content}</p>
+        <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
+          <span>{formatCommentTime(comment.createdAt)}</span>
+          <button
+            type="button"
+            className="hover:text-primary transition-colors"
+            onClick={() => onReply && onReply(comment)}
+          >
+            回复
+          </button>
         </div>
       </div>
     </div>
@@ -50,27 +76,34 @@ export const CommentList: React.FC<CommentListProps> = ({ comments, onReply }) =
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
       <h3 className="font-bold text-gray-900 dark:text-gray-100">评论（{totalCount}）</h3>
-      {(!comments || comments.length === 0) ? (
+      {loading ? (
+        <CommentSkeleton />
+      ) : (!comments || comments.length === 0) ? (
         <div className="text-center py-10 text-gray-400 text-sm">
           暂无评论，快来分享你的想法！
         </div>
       ) : (
-        [...(comments || [])]
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .map(parent => (
-            <div key={parent.id} className="space-y-2">
-              {renderComment(parent)}
-              {parent.replies && parent.replies.length > 0 && (
-                <div className="space-y-2 pl-10">
-                  {parent.replies.map(reply => (
-                    <div key={reply.id} className="border-l border-gray-200 dark:border-gray-700 pl-4">
-                      {renderComment(reply, true)}
+        topLevel.map((root: any) => (
+          <div key={root.id} className="space-y-2">
+            {renderComment(root)}
+            {(repliesByRoot.get(root.id) || []).length > 0 && (
+              <div className="space-y-2 pl-8 md:pl-10 lg:pl-12">
+                {repliesByRoot.get(root.id)!.map((reply: any) => {
+                  const parent = byId.get(reply.parentId)
+                  const isDirect = reply.parentId === root.id
+                  const replyToName = parent?.user?.username || ''
+                  const display = isDirect ? reply.content : `回复 @${replyToName}：${reply.content}`
+                  const payload = isDirect ? reply : { ...reply, content: display }
+                  return (
+                    <div key={reply.id} className="pl-0">
+                      {renderComment(payload, true)}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        ))
       )}
     </div>
   )

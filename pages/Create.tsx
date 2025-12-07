@@ -3,20 +3,23 @@ import React, { useState } from 'react';
 import { VideoGenerateModal } from '../components/AI/VideoGenerateModal';
 import { UploadIcon, PlayIcon } from '../components/Icons';
 import { useApp } from '../context/AppContext';
+import { useUploadVideo } from '../hooks/useUploadVideo';
 import { useVideoGeneration } from '../hooks/useVideoGeneration';
 import { toUiVideo } from '../services/adapters';
-import { parseTags, toastError, toastSuccess } from '../services/utils';
+import { parseTags, toastError } from '../services/utils';
 import { uploadVideo, fetchVideoById } from '../services/video';
 import { Video } from '../types';
 import { getVideoDuration } from '../utils/media';
+import { notifySuccess } from '../utils/notify';
 
 export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const { currentUser, addVideo, updateVideo } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [uploadPercent, setUploadPercent] = useState(0);
+  // 进度统一由 useUploadVideo 提供
   
   const { publish } = useVideoGeneration();
+  const { upload, progress, loading } = useUploadVideo();
 
   const [form, setForm] = useState({
     title: '',
@@ -100,7 +103,6 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
     if (!isAi && (!files.video || !files.cover)) return;
 
     setIsSubmitting(true);
-    setUploadPercent(0);
 
     try {
       const meta = { title: form.title, description: form.description, tags: parseTags(form.tags) }
@@ -114,32 +116,29 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
           // The user guide says: returns { taskId, video: Video, ... }
           // So result.video should be the DbVideo
       } else {
-          dbVideo = await uploadVideo(
-            files.video!,
-            files.cover!,
-            meta,
-            (p) => setUploadPercent(p)
-          )
+          await upload(files.video!, files.cover!, meta)
+          dbVideo = null as any
       }
       
-      if (!dbVideo) throw new Error('发布后未获取到视频信息')
-
-      let uiVideo: Video = toUiVideo(dbVideo)
-      if (currentUser) {
-        uiVideo = {
-          ...uiVideo,
-          uploader: currentUser,
-          isHydrated: false
+      if (!isAi) {
+        // 手动上传路径已在 hook 内完成添加与补全，这里无需重复处理
+      } else {
+        if (!dbVideo) throw new Error('发布后未获取到视频信息')
+        let uiVideo: Video = toUiVideo(dbVideo)
+        if (currentUser) {
+          uiVideo = {
+            ...uiVideo,
+            uploader: currentUser,
+            isHydrated: false
+          }
         }
-      }
-      addVideo(uiVideo)
-      toastSuccess('上传成功')
-
-      // 通过合并用户资料进行数据补齐
-      const full = await fetchVideoById(dbVideo.id)
-      if (full) {
-        const hydrated = toUiVideo(full)
-        updateVideo(dbVideo.id, { ...hydrated, isHydrated: true })
+        addVideo(uiVideo)
+        notifySuccess('上传成功', { id: 'video-upload' })
+        const full = await fetchVideoById(dbVideo.id)
+        if (full) {
+          const hydrated = toUiVideo(full)
+          updateVideo(dbVideo.id, { ...hydrated, isHydrated: true })
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : '发布失败'
@@ -338,17 +337,17 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
                 }
                 className="px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-2"
               >
-                {isSubmitting ? '正在上传…' : '发布视频'}
+                {isSubmitting || loading ? '正在上传…' : '发布视频'}
               </button>
         </div>
-        {isSubmitting && (
+        {(isSubmitting || loading) && (
           <div className="absolute left-8 bottom-6 text-sm w-[280px] md:w-[360px]">
             <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div className="h-2 bg-primary rounded-full transition-all" style={{ width: `${uploadPercent}%` }}></div>
+              <div className="h-2 bg-primary rounded-full transition-all" style={{ width: `${progress}%` }}></div>
             </div>
             <div className="mt-2 flex items-center justify-between text-gray-600 dark:text-gray-400">
               <span>正在上传…</span>
-              <span>{uploadPercent}%</span>
+              <span>{Math.floor(progress)}%</span>
             </div>
           </div>
         )}

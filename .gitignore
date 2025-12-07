@@ -31,3 +31,7 @@ CODEDUMP.txt
 .env.local.env
 .vercel/
 .vercelignore
+
+# Doc
+supabase_doc/
+.trae/

@@ -1,8 +1,10 @@
-import { supabase } from '../lib/supabase'
-import type { Comment as DbComment } from '../types/index.ts'
-import type { Comment as UiComment } from '../types'
-import { toUiComment } from './adapters'
 import { v4 as uuidv4 } from 'uuid'
+
+import { supabase } from '../lib/supabase'
+import type { Comment as UiComment } from '../types'
+import type { Comment as DbComment } from '../types/index.ts'
+
+import { toUiComment } from './adapters'
 
 export const toggleLikeVideo = async (videoId: string) => {
   const { error } = await supabase.rpc('toggle_like', { target_video_id: videoId })
@@ -10,6 +12,51 @@ export const toggleLikeVideo = async (videoId: string) => {
     console.error('Supabase RPC Error:', error)
     throw error
   }
+}
+
+export const fetchLikeStats = async (videoId: string): Promise<{ likeCount: number; isLiked: boolean }> => {
+  const { data: auth } = await supabase.auth.getUser()
+  let total = 0
+  try {
+    const { count } = await supabase
+      .from('video_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('video_id', videoId)
+    total = count || 0
+  } catch (e) {
+    const { count } = await supabase
+      .from('video_likes')
+      .select('*', { count: 'exact' })
+      .eq('video_id', videoId)
+    total = count || 0
+  }
+
+  let liked = false
+  if (auth.user) {
+    const { data: rows, error } = await supabase
+      .from('video_likes')
+      .select('video_id')
+      .eq('video_id', videoId)
+      .eq('user_id', auth.user.id)
+      .limit(1)
+    if (!error && rows && rows.length > 0) liked = true
+  }
+  return { likeCount: total || 0, isLiked: liked }
+}
+
+export const fetchLikeCountsForVideos = async (videoIds: string[]): Promise<Record<string, number>> => {
+  if (videoIds.length === 0) return {}
+  const { data, error } = await supabase
+    .from('video_likes')
+    .select('video_id')
+    .in('video_id', videoIds)
+
+  if (error || !data) return {}
+  const counts: Record<string, number> = {}
+  for (const row of data as Array<{ video_id: string }>) {
+    counts[row.video_id] = (counts[row.video_id] || 0) + 1
+  }
+  return counts
 }
 
 export const sendComment = async (
@@ -64,53 +111,18 @@ export const incrementViewCount = async (videoId: string) => {
 }
 
 export const fetchComments = async (videoId: string): Promise<UiComment[]> => {
-  const { data: parents, error: parentError } = await supabase
+  const { data, error } = await supabase
     .from('comments')
     .select(`
       *,
       profiles (id, username, uid, avatar_url)
     `)
     .eq('video_id', videoId)
-    .is('parent_comment_id', null)
-    .order('created_at', { ascending: false })
-
-  if (parentError) throw parentError
-  const safeParents = (parents || []) as DbComment[]
-  if (safeParents.length === 0) return []
-
-  const parentIds = safeParents.map(c => c.id)
-  const { data: replies, error: replyError } = await supabase
-    .from('comments')
-    .select(`
-      *,
-      profiles (id, username, uid, avatar_url)
-    `)
-    .in('parent_comment_id', parentIds)
     .order('created_at', { ascending: true })
 
-  if (replyError) throw replyError
-  const safeReplies = (replies || []) as DbComment[]
-
-  const uiAll = [...safeParents, ...safeReplies].map(c => toUiComment(videoId, c))
-  const map = new Map<string, UiComment>()
-  uiAll.forEach(c => map.set(c.id, { ...c, replies: [] }))
-
-  const roots: UiComment[] = []
-  map.forEach(c => {
-    if (c.parentId) {
-      const parent = map.get(c.parentId)
-      if (parent) {
-        parent.replies = parent.replies || []
-        parent.replies.push(c)
-      } else {
-        roots.push(c)
-      }
-    } else {
-      roots.push(c)
-    }
-  })
-
-  return roots
+  if (error) throw error
+  const flat = (data || []) as DbComment[]
+  return flat.map(c => toUiComment(videoId, c))
 }
 
 export const fetchLikesForVideos = async (videoIds: string[]): Promise<Record<string, boolean>> => {

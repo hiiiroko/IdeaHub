@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 
 import { CommentInput } from '../components/Detail/CommentInput';
 import { CommentList } from '../components/Detail/CommentList';
+import { DetailSkeleton } from '../components/Detail/DetailSkeleton';
 import { VideoInfo } from '../components/Detail/VideoInfo';
 import { VideoPlayer } from '../components/Detail/VideoPlayer';
 import { useApp } from '../context/AppContext';
@@ -16,13 +17,19 @@ interface DetailProps {
 
 export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth }) => {
   const { videos, currentUser, toggleLike, addComment, incrementView, updateVideo } = useApp();
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [commentText, setCommentText] = useState('');
   const [commentSending, setCommentSending] = useState(false);
   const hasIncremented = useRef(false);
   const commentsFetched = useRef(false);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [commentsLoading, setCommentsLoading] = useState<boolean>(true);
   
   const video = videos.find(v => v.id === videoId);
+
+  useEffect(() => {
+    setIsLoading(!video);
+  }, [video]);
 
   useEffect(() => {
     if (video && !hasIncremented.current) {
@@ -35,12 +42,15 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
       const loadComments = async () => {
           if (!videoId || commentsFetched.current) return;
           try {
+              setCommentsLoading(true);
               const uiComments = await fetchComments(videoId);
               // Update context with fetched comments
               updateVideo(videoId, { comments: uiComments });
               commentsFetched.current = true;
           } catch (e) {
               console.error('Failed to load comments', e);
+          } finally {
+              setCommentsLoading(false);
           }
       };
       
@@ -48,10 +58,21 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
           loadComments();
       } else if (video && video.comments && video.comments.length > 0) {
           commentsFetched.current = true;
+          setCommentsLoading(false);
       }
   }, [videoId, video, updateVideo]);
 
-  if (!video) return null;
+  if (!video) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div className="relative w-full max-w-6xl h-full md:h-[90vh] bg-white dark:bg-gray-800 md:rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl">
+          <div className="w-full md:w-1/3 p-6">
+            <DetailSkeleton />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,15 +104,22 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
 
          {/* 右：交互 */}
          <div className="w-full md:w-1/3 flex flex-col bg-white dark:bg-gray-800 h-full">
-            <VideoInfo 
-              video={video} 
-              currentUser={currentUser} 
-              onRequireAuth={onRequireAuth} 
-              toggleLike={toggleLike} 
-            />
+            {isLoading ? (
+              <div className="p-6">
+                <DetailSkeleton />
+              </div>
+            ) : (
+              <VideoInfo 
+                video={video} 
+                currentUser={currentUser} 
+                onRequireAuth={onRequireAuth} 
+                toggleLike={toggleLike} 
+              />
+            )}
 
             <CommentList
               comments={video.comments || []}
+              loading={commentsLoading}
               onReply={(comment) => {
                 if (!currentUser) {
                   onRequireAuth && onRequireAuth();
