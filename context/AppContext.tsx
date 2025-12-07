@@ -3,9 +3,10 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { toUiVideo } from '../services/adapters';
-import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos } from '../services/interaction';
+import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos, fetchComments } from '../services/interaction';
 import { fetchVideos } from '../services/video';
 import { User, Video, Comment, SortOption } from '../types.ts';
+import toast from 'react-hot-toast';
 
 /**
  * 应用上下文（AppContext）模块
@@ -33,7 +34,7 @@ interface AppContextType extends AppState {
   deleteVideo: (id: string) => void;
   updateVideo: (id: string, data: Partial<Video>) => void;
   toggleLike: (videoId: string) => void;
-  addComment: (videoId: string, content: string, parentId?: string | null) => void;
+  addComment: (videoId: string, content: string, parentId?: string | null) => Promise<void>;
   incrementView: (videoId: string) => void;
   authLogin: (email: string, password: string) => Promise<void>;
   authRegister: (email: string, password: string, username: string) => Promise<void>;
@@ -67,17 +68,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const list = await fetchVideos(SortOption.LATEST);
       const baseUiList = list.map(v => toUiVideo(v));
+      let uiList = baseUiList;
+
       const videoIds = baseUiList.map(v => v.id);
       const likeMap = await fetchLikesForVideos(videoIds);
-
-      const uiList = baseUiList.map(v => {
-        const likeInfo = likeMap[v.id] || { count: 0, isLiked: false };
-        return {
+      if (Object.keys(likeMap).length > 0) {
+        uiList = baseUiList.map(v => ({
           ...v,
-          likeCount: likeInfo.count,
-          isLiked: likeInfo.isLiked,
-        };
-      });
+          isLiked: !!likeMap[v.id],
+        }));
+      }
 
       setVideos(uiList);
     } finally {
@@ -150,8 +150,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setVideos(prev => toggleLikeInList(prev, videoId));
     try {
       await toggleLikeVideo(videoId);
-    } catch {
+      toast.success('已更新点赞');
+    } catch (e) {
+      console.error('toggleLike failed', e);
       setVideos(prev => toggleLikeInList(prev, videoId));
+      toast.error('点赞操作失败');
     }
   }, []);
 
@@ -159,58 +162,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * 发送评论并在本地拼接评论列表（头部追加）
    */
   const addComment = useCallback(async (videoId: string, content: string, parentId: string | null = null) => {
-    if (!currentUser) return;
-    const created = await sendComment(videoId, content, parentId);
-    const baseComment: Comment = {
-      id: created.id,
-      content: created.content,
-      userId: created.user_id,
-      videoId,
-      createdAt: created.created_at,
-      parentId,
-      user: {
-        id: currentUser.id,
-        email: currentUser.email,
-        username: currentUser.username,
-        uid: currentUser.uid,
-        avatar: currentUser.avatar,
-        createdAt: currentUser.createdAt,
-      },
-      replies: [],
-    };
-
-    setVideos(prev => prev.map(v => {
-      if (v.id !== videoId) return v;
-      const existingComments = v.comments || [];
-
-      if (!parentId) {
+    if (!currentUser) {
+      toast.error('请先登录后再评论');
+      return;
+    }
+    try {
+      await sendComment(videoId, content, parentId);
+      const refreshed = await fetchComments(videoId);
+      setVideos(prev => prev.map(v => {
+        if (v.id !== videoId) return v;
+        const total = refreshed.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
         return {
           ...v,
-          commentCount: (v.commentCount ?? 0) + 1,
-          comments: [baseComment, ...existingComments],
+          comments: refreshed,
+          commentCount: total,
         };
-      }
-
-      let attached = false;
-      const updatedComments = existingComments.map(c => {
-        if (c.id !== parentId) return c;
-        const replies = c.replies || [];
-        attached = true;
-        return {
-          ...c,
-          replies: [...replies, baseComment],
-        };
-      });
-
-      const finalComments = attached ? updatedComments : [baseComment, ...existingComments];
-
-      return {
-        ...v,
-        commentCount: (v.commentCount ?? 0) + 1,
-        comments: finalComments,
-      };
-    }));
-  }, [currentUser]);
+      }));
+      toast.success('评论已发送');
+    } catch (e: any) {
+      console.error('Failed to send comment', e);
+      toast.error(e?.message || '评论发送失败');
+    }
+  }, [currentUser, fetchComments]);
 
 
   // 增加浏览计数（乐观更新 + 异步上报）

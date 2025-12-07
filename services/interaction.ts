@@ -12,73 +12,55 @@ export const toggleLikeVideo = async (videoId: string) => {
   }
 }
 
-export const sendComment = async (videoId: string, content: string, parentCommentId: string | null = null) => {
+export const sendComment = async (
+  videoId: string,
+  content: string,
+  parentCommentId: string | null = null,
+): Promise<DbComment> => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('未登录')
 
-  const { data, error } = await supabase.rpc('add_comment', {
+  const { error } = await supabase.rpc('add_comment', {
     target_video_id: videoId,
     content,
-    parent_comment_id: parentCommentId
+    parent_comment_id: parentCommentId,
   })
 
   if (error) throw error
 
-  // Fetch the latest comment by this user on this video
   const { data: latestComment, error: fetchError } = await supabase
     .from('comments')
-    .select('*, profiles(username, uid, avatar_url)')
+    .select('*, profiles(id, username, uid, avatar_url)')
     .eq('video_id', videoId)
-    .eq('user_id', user.id)
+    .eq('author_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
     .single()
 
   if (fetchError || !latestComment) {
-     // Fallback optimistic with a UUID to keep reply flows working
-     return {
-        id: uuidv4(),
-        video_id: videoId,
-        user_id: user.id,
-        content,
-        parent_comment_id: parentCommentId,
+    return {
+      id: uuidv4(),
+      video_id: videoId,
+      author_id: user.id,
+      content,
+      parent_comment_id: parentCommentId,
+      created_at: new Date().toISOString(),
+      profiles: {
+        id: user.id,
+        username: user.user_metadata?.username || 'Me',
+        uid: null,
+        avatar_url: user.user_metadata?.avatar_url,
+        bio: null,
         created_at: new Date().toISOString(),
-        profiles: {
-            username: user.user_metadata?.username || 'Me',
-            uid: null,
-            id: user.id,
-            avatar_url: user.user_metadata?.avatar_url,
-            bio: null,
-            created_at: new Date().toISOString()
-        }
-     } as unknown as DbComment
+      },
+    } as DbComment
   }
-  
-  return latestComment as unknown as DbComment
+
+  return latestComment as DbComment
 }
 
 export const incrementViewCount = async (videoId: string) => {
   await supabase.rpc('increment_view_count', { video_id: videoId })
-}
-
-const buildThreadedComments = (videoId: string, parents: DbComment[], replies: DbComment[]): UiComment[] => {
-  const replyMap: Record<string, UiComment[]> = {}
-
-  for (const r of replies) {
-    if (!r.parent_comment_id) continue
-    const ui = toUiComment(videoId, r)
-    const list = replyMap[r.parent_comment_id] || (replyMap[r.parent_comment_id] = [])
-    list.push(ui)
-  }
-
-  return parents.map(p => {
-    const uiParent = toUiComment(videoId, p)
-    const children = replyMap[p.id] || []
-    return {
-      ...uiParent,
-      replies: children,
-    }
-  })
 }
 
 export const fetchComments = async (videoId: string): Promise<UiComment[]> => {
@@ -93,11 +75,10 @@ export const fetchComments = async (videoId: string): Promise<UiComment[]> => {
     .order('created_at', { ascending: false })
 
   if (parentError) throw parentError
+  const safeParents = (parents || []) as DbComment[]
+  if (safeParents.length === 0) return []
 
-  const parentList = parents || []
-  if (parentList.length === 0) return []
-
-  const parentIds = parentList.map(c => c.id)
+  const parentIds = safeParents.map(c => c.id)
   const { data: replies, error: replyError } = await supabase
     .from('comments')
     .select(`
@@ -108,35 +89,45 @@ export const fetchComments = async (videoId: string): Promise<UiComment[]> => {
     .order('created_at', { ascending: true })
 
   if (replyError) throw replyError
+  const safeReplies = (replies || []) as DbComment[]
 
-  return buildThreadedComments(videoId, parentList as DbComment[], (replies || []) as DbComment[])
+  const uiAll = [...safeParents, ...safeReplies].map(c => toUiComment(videoId, c))
+  const map = new Map<string, UiComment>()
+  uiAll.forEach(c => map.set(c.id, { ...c, replies: [] }))
+
+  const roots: UiComment[] = []
+  map.forEach(c => {
+    if (c.parentId) {
+      const parent = map.get(c.parentId)
+      if (parent) {
+        parent.replies = parent.replies || []
+        parent.replies.push(c)
+      } else {
+        roots.push(c)
+      }
+    } else {
+      roots.push(c)
+    }
+  })
+
+  return roots
 }
 
-export const fetchLikesForVideos = async (videoIds: string[]) => {
-  if (videoIds.length === 0) return {}
-
+export const fetchLikesForVideos = async (videoIds: string[]): Promise<Record<string, boolean>> => {
   const { data: auth } = await supabase.auth.getUser()
-  const currentUserId = auth.user?.id ?? null
+  if (!auth.user || videoIds.length === 0) return {}
 
   const { data, error } = await supabase
     .from('video_likes')
-    .select('video_id, user_id')
+    .select('video_id')
     .in('video_id', videoIds)
+    .eq('user_id', auth.user.id)
 
-  if (error) throw error
+  if (error || !data) return {}
 
-  const result: Record<string, { count: number; isLiked: boolean }> = {}
-
-  for (const row of data || []) {
-    const vid = row.video_id as string
-    if (!result[vid]) {
-      result[vid] = { count: 0, isLiked: false }
-    }
-    result[vid].count += 1
-    if (currentUserId && row.user_id === currentUserId) {
-      result[vid].isLiked = true
-    }
+  const map: Record<string, boolean> = {}
+  for (const row of data) {
+    map[row.video_id] = true
   }
-
-  return result
+  return map
 }
