@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { Video } from '../../types/video'
+import { Video } from '../../types'
 import { EditIcon, TrashIcon, PlayIcon, EyeIcon } from '../Icons'
 
 interface VideoTableProps {

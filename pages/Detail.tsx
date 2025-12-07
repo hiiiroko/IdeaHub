@@ -28,6 +28,14 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
   const video = videos.find(v => v.id === videoId);
 
   useEffect(() => {
+    hasIncremented.current = false;
+    commentsFetched.current = false;
+    setCommentsLoading(true);
+    setReplyTo(null);
+    setCommentText('');
+  }, [videoId]);
+
+  useEffect(() => {
     setIsLoading(!video);
   }, [video]);
 

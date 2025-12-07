@@ -18,20 +18,6 @@ export const getVideoDuration = (file: File): Promise<number> => {
 }
 
 /**
- * Get the duration of a video from a URL in seconds
- */
-export const getVideoDurationFromUrl = (url: string): Promise<number> => {
-  return new Promise((resolve) => {
-    const element = document.createElement('video')
-    element.preload = 'metadata'
-    element.onloadedmetadata = () => {
-      resolve(Math.round(element.duration))
-    }
-    element.src = url
-  })
-}
-
-/**
  * Get the aspect ratio (width/height) of an image file
  */
 export const getImageAspectRatio = (file: File): Promise<number> => {

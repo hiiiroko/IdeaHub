@@ -44,6 +44,7 @@ interface AppContextType extends AppState {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+const viewIncrementLimiter = new Map<string, number>();
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { theme, toggleTheme, setTheme } = useTheme();
@@ -155,20 +156,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * 切换点赞状态（乐观更新 + 失败回滚）
    */
   const toggleLike = useCallback(async (videoId: string) => {
-    const snapshot = videos.find(v => v.id === videoId)
-    setVideos(prev => toggleLikeInList(prev, videoId));
+    let snapshot: Video | undefined;
+    setVideos(prev => {
+      snapshot = prev.find(v => v.id === videoId);
+      return toggleLikeInList(prev, videoId);
+    });
     try {
       await toggleLikeVideo(videoId);
-      const stats = await fetchLikeStats(videoId)
-      setVideos(prev => prev.map(v => v.id === videoId ? { ...v, isLiked: stats.isLiked, likeCount: stats.likeCount } : v))
+      const stats = await fetchLikeStats(videoId);
+      setVideos(prev => prev.map(v => v.id === videoId ? { ...v, isLiked: stats.isLiked, likeCount: stats.likeCount } : v));
       toast.success(stats.isLiked ? '点赞成功' : '已取消点赞');
     } catch (e) {
       console.error('toggleLike failed', e);
-      if (snapshot) {
-        setVideos(prev => prev.map(v => v.id === videoId ? { ...v, isLiked: snapshot.isLiked, likeCount: snapshot.likeCount } : v))
-      } else {
-        setVideos(prev => toggleLikeInList(prev, videoId));
-      }
+      setVideos(prev => snapshot
+        ? prev.map(v => v.id === videoId ? { ...v, isLiked: snapshot?.isLiked ?? v.isLiked, likeCount: snapshot?.likeCount ?? v.likeCount } : v)
+        : toggleLikeInList(prev, videoId)
+      );
       toast.error('点赞失败，请稍后重试');
     }
   }, []);
@@ -201,10 +204,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [currentUser, fetchComments]);
 
 
-  // 增加浏览计数（乐观更新 + 异步上报）
+  // 增加浏览计数（乐观更新 + 异步上报），对短时间重复调用做节流防止重复计数
   const incrementView = useCallback(async (videoId: string) => {
+    const now = Date.now();
+    const last = viewIncrementLimiter.get(videoId);
+    if (last && now - last < 1500) {
+      return;
+    }
+    viewIncrementLimiter.set(videoId, now);
     setVideos(prev => prev.map(v => v.id === videoId ? { ...v, viewCount: v.viewCount + 1 } : v));
-    await incrementViewCount(videoId);
+    try {
+      await incrementViewCount(videoId);
+    } catch (e) {
+      console.error('incrementView failed', e);
+    }
   }, []);
 
   /**

@@ -28,7 +28,8 @@ dist-ssr
 CODEDUMP.txt
 
 # ENV
-.env.local.env
+.env.local
+.env
 .vercel/
 .vercelignore
 

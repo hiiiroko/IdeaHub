@@ -49,7 +49,6 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
   const [previewLoadingCover, setPreviewLoadingCover] = useState(false)
 
   const [aiOpen, setAiOpen] = useState(false)
-  const [aiVideoUrl, setAiVideoUrl] = useState('')
   const [aiTaskId, setAiTaskId] = useState('')
   const [aiGenerating, setAiGenerating] = useState(false)
   
@@ -84,7 +83,6 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
       setPreviews(prev => ({ ...prev, [type]: url }));
       setInvalid(prev => ({ ...prev, [type]: false }))
       if (type === 'video') {
-        setAiVideoUrl('')
         setAiTaskId('')
         setPreviewLoadingVideo(true)
       }
@@ -103,6 +101,7 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
     if (!isAi && (!files.video || !files.cover)) return;
 
     setIsSubmitting(true);
+    let succeeded = false;
 
     try {
       const meta = { title: form.title, description: form.description, tags: parseTags(form.tags) }
@@ -140,17 +139,19 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
           updateVideo(dbVideo.id, { ...hydrated, isHydrated: true })
         }
       }
+      succeeded = true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : '发布失败'
       console.error(err)
       toastError(msg)
     }
     setIsSubmitting(false);
-    onComplete();
+    if (succeeded) {
+      onComplete();
+    }
   };
 
   const onAiSaved = async (result: { taskId: string, videoUrl: string, coverUrl: string | null }) => {
-    setAiVideoUrl(result.videoUrl)
     setAiTaskId(result.taskId)
     setAiGenerating(false)
     setPreviews(prev => ({ ...prev, video: result.videoUrl }))
@@ -175,9 +176,6 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
     setPreviewLoadingCover(true) // Assuming cover is loading
     // Actually if it's a URL, we can just let img onLoad handle it.
     
-    // Try to get duration if possible
-    // getVideoDurationFromUrl might fail on cross-origin, but let's try
-    // Or just skip
   }
 
   return (

@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { supabase } from '../lib/supabase'
 import type { Video as DbVideo } from '../types/index.ts'
-import { getVideoDuration, getVideoDurationFromUrl, getImageAspectRatio } from '../utils/media'
+import { getVideoDuration, getImageAspectRatio } from '../utils/media'
 
 const BUCKET = (import.meta.env.VITE_SUPABASE_BUCKET as string) || 'IdeaUploads'
 
@@ -122,28 +122,6 @@ export const uploadVideo = async (
   }
 }
 
-export const publishGeneratedVideoFromUrl = async (
-  videoUrl: string, // This might be a temp URL from Ark or somewhere
-  cover: File, // Or cover URL? The existing function takes File. 
-  // If the video is already in storage (from generate task), we might handle it differently.
-  // But assuming this is for uploading a generated video file?
-  // Wait, the user guide says: action="download" -> returns Video record.
-  // So maybe we don't need this function anymore if we use the "download" action?
-  // The user guide says: "When task is succeeded, call action=download".
-  // I'll keep this for manual upload of generated content if needed, but the new flow prefers the edge function.
-  // I'll leave it as is but updated for the new schema if used.
-  meta: { title: string; description: string; tags: string[] }
-) => {
-    // This function seems to be for the "old" way where we might have had a URL and uploaded it?
-    // Or maybe we just use the edge function now.
-    // I will leave it commented out or deprecated if not used, but to be safe I'll update it to match schema.
-    // Actually, if videoUrl is external, we might need to download and upload it to our storage?
-    // Or if it's already in our storage?
-    // Given the new "download" action in Edge Function, that function probably handles moving/saving the video.
-    // So I will likely not use this function.
-    throw new Error("Please use the 'download' action in Video Generation")
-}
-
 export const fetchVideoById = async (id: string): Promise<DbVideo | null> => {
   const { data, error } = await supabase
     .from('videos')
@@ -178,4 +156,4 @@ export const deleteVideo = async (id: string) => {
   if (error) throw error
 }
 
-export { getVideoDuration, getVideoDurationFromUrl }
+export { getVideoDuration }
