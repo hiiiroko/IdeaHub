@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
+import toast from 'react-hot-toast'
 
 import { supabase } from '../lib/supabase'
 import type { Video as DbVideo } from '../types/index.ts'
@@ -55,56 +56,65 @@ export const uploadVideo = async (
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('未登录')
 
-  const videoExt = file.name.split('.').pop()
-  const coverExt = cover.name.split('.').pop()
-  const videoPath = `${user.id}/videos/${uuidv4()}.${videoExt}`
-  const coverPath = `${user.id}/covers/${uuidv4()}.${coverExt}`
+  try {
+    const videoExt = file.name.split('.').pop()
+    const coverExt = cover.name.split('.').pop()
+    const videoPath = `${user.id}/videos/${uuidv4()}.${videoExt}`
+    const coverPath = `${user.id}/covers/${uuidv4()}.${coverExt}`
 
-  // Upload video using supabase client (reliable auth & headers)
-  const { error: videoError } = await supabase.storage.from(BUCKET).upload(videoPath, file, {
-    contentType: file.type,
-    upsert: false
-  })
-
-  if (videoError) throw videoError
-
-  if (onProgress) {
-    onProgress(100)
-  }
-  
-  // Upload cover (no progress needed usually, it's small)
-  const { error: coverError } = await supabase.storage.from(BUCKET).upload(coverPath, cover, {
-    contentType: cover.type
-  })
-  if (coverError) throw coverError
-
-  const [duration, aspectRatio] = await Promise.all([
-    getVideoDuration(file),
-    getImageAspectRatio(cover)
-  ])
-
-  const { data, error } = await supabase
-    .from('videos')
-    .insert({
-      uploader_id: user.id,
-      title: meta.title,
-      description: meta.description,
-      tags: meta.tags,
-      video_path: videoPath,
-      cover_path: coverPath,
-      duration,
-      aspect_ratio: aspectRatio,
-      is_public: true,
-      is_deleted: false
+    const { error: videoError } = await supabase.storage.from(BUCKET).upload(videoPath, file, {
+      contentType: file.type,
+      upsert: false
     })
-    .select(`
-      *,
-      profiles!videos_uploader_id_fkey (id, username, avatar_url, uid)
-    `)
-    .single()
 
-  if (error) throw error
-  return data as unknown as DbVideo
+    if (videoError) throw videoError
+
+    if (onProgress) {
+      onProgress(100)
+    }
+
+    const { error: coverError } = await supabase.storage.from(BUCKET).upload(coverPath, cover, {
+      contentType: cover.type
+    })
+    if (coverError) throw coverError
+
+    const [duration, aspectRatio] = await Promise.all([
+      getVideoDuration(file),
+      getImageAspectRatio(cover)
+    ])
+
+    const { data, error } = await supabase
+      .from('videos')
+      .insert({
+        uploader_id: user.id,
+        title: meta.title,
+        description: meta.description,
+        tags: meta.tags,
+        video_path: videoPath,
+        cover_path: coverPath,
+        duration,
+        aspect_ratio: aspectRatio,
+        is_public: true,
+        is_deleted: false
+      })
+      .select(`
+        *,
+        profiles!videos_uploader_id_fkey (id, username, avatar_url, uid)
+      `)
+      .single()
+
+    if (error) throw error
+    toast.success('视频上传成功')
+    return data as unknown as DbVideo
+  } catch (err: any) {
+    const message: string = err?.message || ''
+    if (/row-level security/i.test(message) || /RLS/i.test(message)) {
+      toast.error('当前用户无权上传到该存储桶，请联系管理员调整 Supabase RLS 策略')
+    } else {
+      toast.error(message || '上传失败')
+    }
+    throw err
+  }
 }
 
 export const publishGeneratedVideoFromUrl = async (

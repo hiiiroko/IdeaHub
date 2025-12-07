@@ -28,41 +28,42 @@ export const toUiComment = (videoId: string, c: DbComment): UiComment => {
   return {
     id: c.id,
     content: c.content,
-    userId: c.user_id,
+    userId: c.author_id,
     videoId,
     createdAt: c.created_at,
-    parentId: c.parent_comment_id,
-    user: c.profiles ? toUiUser(c.user_id, c.profiles) : {
-        id: c.user_id,
-        email: '',
-        username: 'Unknown',
-        uid: c.user_id.slice(0, 8),
-        avatar: undefined,
-        createdAt: '',
-    }
+    parentId: c.parent_comment_id ?? null,
+    user: c.profiles
+      ? toUiUser(c.author_id, c.profiles)
+      : {
+          id: c.author_id,
+          email: '',
+          username: '匿名用户',
+          uid: c.author_id.slice(0, 8),
+          avatar: undefined,
+          createdAt: '',
+        },
+    replies: [],
   }
 }
 
 export const toUiVideo = (v: DbVideo): UiVideo => {
-  const ui: UiVideo = {
+  return {
     id: v.id,
-    title: v.title,
-    description: v.description || undefined,
-    tags: v.tags || [],
+    title: v.title ?? '',
+    description: v.description ?? undefined,
+    tags: v.tags ?? [],
     videoUrl: getPublicUrl(v.video_path),
     coverUrl: getPublicUrl(v.cover_path),
     aspectRatio: v.aspect_ratio ?? 1.77,
     duration: v.duration ?? 0,
-    viewCount: v.view_count || 0,
-    likeCount: v.like_count || 0,
-    commentCount: 0, // Comments are not fetched in list view usually
-    createdAt: v.created_at,
-    updatedAt: v.updated_at || v.created_at,
+    viewCount: v.view_count ?? 0,
+    likeCount: v.like_count ?? 0,
+    commentCount: v.comment_count ?? 0,
+    createdAt: v.created_at ?? new Date().toISOString(),
+    updatedAt: v.updated_at ?? v.created_at ?? new Date().toISOString(),
     uploaderId: v.uploader_id,
     uploader: toUiUser(v.uploader_id, v.profiles),
-    comments: [], // Comments not fetched in list
-    commentCount: v.comment_count ?? 0,
-    isLiked: !!v.is_liked
+    comments: [],
+    isLiked: !!v.is_liked,
   }
-  return ui
 }
