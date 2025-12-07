@@ -22,8 +22,8 @@ export const sendComment = async (
 
   const { error } = await supabase.rpc('add_comment', {
     target_video_id: videoId,
-    content,
-    parent_comment_id: parentCommentId,
+    p_content: content,
+    p_parent_comment_id: parentCommentId ?? null,
   })
 
   if (error) throw error
