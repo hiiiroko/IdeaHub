@@ -4,6 +4,7 @@ import { RankingChart } from './Charts/RankingChart';
 import { StatsChart } from './Charts/StatsChart';
 import { TrendChart } from './Charts/TrendChart';
 
+import { SkeletonBlock } from '@/components/common/SkeletonBlock';
 import { useApp } from '@/context/AppContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
@@ -45,14 +46,31 @@ const DashboardCharts: React.FC = () => {
 
   if (loading) return (
     <div className="mt-4">
-      <div className="grid grid-cols-[2fr_1fr] gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+            <SkeletonBlock className="h-3 w-20 rounded" />
+            <SkeletonBlock className="h-5 w-24 rounded mt-2" />
+            <SkeletonBlock className="h-3 w-32 rounded mt-2" />
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4">
         <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4">
-          <div className="h-6 w-40 mb-3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          <SkeletonBlock className="h-6 w-40 mb-3 rounded" />
           <div className="h-[320px] rounded bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse" />
         </div>
         <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4">
-          <div className="h-6 w-32 mb-3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          <SkeletonBlock className="h-6 w-32 mb-3 rounded" />
           <div className="h-[320px] rounded bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 mt-4">
+        <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4">
+          <SkeletonBlock className="h-6 w-36 mb-3 rounded" />
+          <div className="h-[280px] rounded bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse" />
         </div>
       </div>
     </div>
@@ -77,17 +95,8 @@ const DashboardCharts: React.FC = () => {
         <StatsChart data={pieData} theme={theme} scale={scale} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_1fr] gap-4 mt-4">
+      <div className="grid grid-cols-1 gap-4 mt-4">
         <RankingChart data={topVideos} theme={theme} scale={scale} />
-        <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">内容健康度</h3>
-          <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
-            <li>• 互动率 = （点赞 + 评论）/ 浏览量，常用衡量短视频有效触达。</li>
-            <li>• 关注浏览量与新增作品的同向/背离走势，判断内容供给是否匹配消费。</li>
-            <li>• TOP 列表既可用于复用成功模板，也用于发现需要优化的长尾视频。</li>
-            <li>• 平均时长可结合人群定位，进一步调整拍摄脚本与节奏。</li>
-          </ul>
-        </div>
       </div>
     </div>
   );

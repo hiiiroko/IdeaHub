@@ -14,17 +14,18 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme, scale = 1 }
   const legendItemGap = Math.max(8, Math.round(12 * scale));
   const emphasisFontSize = Math.max(14, Math.round(18 * scale));
   const centerY = '60%';
+  const legendSelected = Object.fromEntries(data.map(i => [i.type, i.value > 0]));
 
   const option = {
     tooltip: { trigger: 'item', formatter: (p: any) => `${p.name}: ${p.data?.raw ?? p.value}` },
-    legend: { top: 0, left: 'center', type: 'scroll', itemGap: legendItemGap, textStyle: { color: baseText } },
+    legend: { top: 0, left: 'center', type: 'scroll', itemGap: legendItemGap, textStyle: { color: baseText }, selected: legendSelected },
     series: [{
       name: '互动统计', type: 'pie', radius: ['40%', '70%'], avoidLabelOverlap: false,
       itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
       center: ['50%', centerY],
       label: { show: false, position: 'center', formatter: (p: any) => `${p.name}: ${p.data?.raw ?? p.value}` },
       emphasis: { label: { show: true, fontSize: emphasisFontSize, fontWeight: 'bold', color: baseText, formatter: (p: any) => `${p.name}: ${p.data?.raw ?? p.value}` } },
-      data: data.map(i => ({ value: Math.max(1, i.value), raw: i.value, name: i.type })),
+      data: data.map(i => ({ value: i.value, raw: i.value, name: i.type })),
     }],
   };
 
