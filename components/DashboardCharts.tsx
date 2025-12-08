@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { RankingChart } from './Charts/RankingChart';
 import { StatsChart } from './Charts/StatsChart';
@@ -10,6 +10,25 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 const DashboardCharts: React.FC = () => {
   const { theme } = useApp();
   const { loading, error, lineData, pieData, summary, topVideos } = useDashboardData();
+  const [scale, setScale] = useState(1);
+
+  const designTotalHeight = 380 + 380;
+  const reservedHeight = 280;
+
+  const computeScale = () => {
+    const vh = window.innerHeight;
+    const available = Math.max(0, Math.floor(vh * 0.85) - reservedHeight);
+    const ratio = designTotalHeight > 0 ? available / designTotalHeight : 1;
+    const s = Math.max(0.6, Math.min(1, ratio));
+    setScale(s);
+  };
+
+  useEffect(() => {
+    computeScale();
+    const onResize = () => computeScale();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const metrics = [
     { label: '总浏览量', value: summary?.totalViews ?? 0, hint: '覆盖全部公开/非公开视频的观看事件' },
@@ -54,12 +73,12 @@ const DashboardCharts: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4">
-        <TrendChart data={lineData} theme={theme} />
-        <StatsChart data={pieData} theme={theme} />
+        <TrendChart data={lineData} theme={theme} scale={scale} />
+        <StatsChart data={pieData} theme={theme} scale={scale} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_1fr] gap-4 mt-4">
-        <RankingChart data={topVideos} theme={theme} />
+        <RankingChart data={topVideos} theme={theme} scale={scale} />
         <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">内容健康度</h3>
           <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-200">

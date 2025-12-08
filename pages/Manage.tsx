@@ -96,7 +96,7 @@ export const Manage: React.FC = () => {
     </div>
     {chartsPreviewOpen && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="relative w-full max-w-5xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="relative w-full max-w-5xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[85vh] overflow-hidden">
           <button
             onClick={() => setChartsPreviewOpen(false)}
             className="absolute top-3 right-3 z-10 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
@@ -104,7 +104,7 @@ export const Manage: React.FC = () => {
           >
             ✕
           </button>
-          <div className="p-4">
+          <div className="max-h-[85vh] overflow-y-auto p-4 modal-scroll">
             <DashboardCharts />
           </div>
         </div>
@@ -136,7 +136,7 @@ export const Manage: React.FC = () => {
     })()}
     {previewOpen && previewUrl && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[85vh] overflow-hidden">
           <button
             onClick={() => { setPreviewOpen(false); setPreviewUrl('') }}
             className="absolute top-3 right-3 z-10 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
@@ -144,8 +144,10 @@ export const Manage: React.FC = () => {
           >
             ✕
           </button>
-          <div className="w-full bg-black flex items-center justify-center">
-            <video src={previewUrl} controls autoPlay className="w-full h-full max-h-[80vh] object-contain" />
+          <div className="max-h-[85vh] overflow-y-auto modal-scroll">
+            <div className="w-full bg-black flex items-center justify-center">
+              <video src={previewUrl} controls autoPlay className="w-full h-full max-h-[80vh] object-contain" />
+            </div>
           </div>
         </div>
       </div>

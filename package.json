@@ -34,7 +34,6 @@
     "@supabase/supabase-js": "^2.84.0",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.5",
-    "framer-motion": "^12.23.24",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0",

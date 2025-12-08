@@ -6,22 +6,23 @@ import type { TopVideoItem } from '../../types/charts';
 interface RankingChartProps {
   data: TopVideoItem[];
   theme: string;
+  scale?: number;
 }
 
-export const RankingChart: React.FC<RankingChartProps> = ({ data, theme }) => {
+export const RankingChart: React.FC<RankingChartProps> = ({ data, theme, scale = 1 }) => {
   const baseText = theme === 'dark' ? '#e5e7eb' : '#374151';
   const viewColor = theme === 'dark' ? '#34d399' : '#22c55e';
   const likeColor = theme === 'dark' ? '#60a5fa' : '#3b82f6';
   const commentColor = theme === 'dark' ? '#f9a8d4' : '#ec4899';
 
+  const gb = Math.max(30, Math.round(50 * scale));
   const option = {
-    title: { text: 'TOP 视频表现', left: 'center', textStyle: { color: baseText } },
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { bottom: 0, textStyle: { color: baseText } },
-    grid: { left: 0, right: 0, bottom: 50, top: 50, containLabel: true },
+    legend: { bottom: 0, type: 'scroll', itemGap: Math.max(8, Math.round(12 * scale)), textStyle: { color: baseText } },
+    grid: { left: Math.max(12, Math.round(18 * scale)), right: Math.max(12, Math.round(18 * scale)), bottom: gb, top: gb, containLabel: true },
     xAxis: {
       type: 'value',
-      axisLabel: { color: baseText },
+      axisLabel: { color: baseText, hideOverlap: true, margin: 10 },
       splitLine: { lineStyle: { color: theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#e5e7eb' } },
     },
     yAxis: {
@@ -30,15 +31,16 @@ export const RankingChart: React.FC<RankingChartProps> = ({ data, theme }) => {
       axisLabel: { color: baseText },
     },
     series: [
-      { name: '浏览', type: 'bar', data: data.map(i => i.views), itemStyle: { color: viewColor }, barWidth: 12 },
-      { name: '点赞', type: 'bar', data: data.map(i => i.likes), itemStyle: { color: likeColor }, barWidth: 12 },
-      { name: '评论', type: 'bar', data: data.map(i => i.comments), itemStyle: { color: commentColor }, barWidth: 12 },
+      { name: '浏览', type: 'bar', data: data.map(i => i.views), itemStyle: { color: viewColor }, barWidth: Math.max(8, Math.round(12 * scale)) },
+      { name: '点赞', type: 'bar', data: data.map(i => i.likes), itemStyle: { color: likeColor }, barWidth: Math.max(8, Math.round(12 * scale)) },
+      { name: '评论', type: 'bar', data: data.map(i => i.comments), itemStyle: { color: commentColor }, barWidth: Math.max(8, Math.round(12 * scale)) },
     ],
   };
 
   return (
     <div className="rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4">
-      <ReactECharts option={option} style={{ height: 380 }} />
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-3">TOP 视频表现</h3>
+      <ReactECharts option={option} style={{ height: Math.round(380 * scale) }} />
     </div>
   );
 };
