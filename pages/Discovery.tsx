@@ -114,7 +114,7 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
 
       {/* 内容 */}
       {isLoading ? (
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="break-inside-avoid bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 h-64 animate-pulse">
               <div className="h-48 bg-gray-200 dark:bg-gray-700"></div>
@@ -126,7 +126,7 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
           ))}
         </div>
       ) : filteredVideos.length > 0 ? (
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <AnimatePresence initial={false}>
             {filteredVideos.map(video => {
               const showSkeleton = video.isHydrated === false || !video.uploader?.username || !video.coverUrl;
@@ -138,7 +138,7 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.5, ease: [0.2, 0.6, 0.2, 1] }}
-                  className="mb-4 break-inside-avoid"
+                  className="break-inside-avoid"
                 >
                   {showSkeleton ? (
                     <VideoCardSkeleton ratio={video.aspectRatio} />
