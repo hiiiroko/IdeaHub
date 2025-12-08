@@ -1,12 +1,44 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 
 import { SearchIcon } from '../components/Icons';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { VideoCard } from '../components/VideoCard';
 import { VideoCardSkeleton } from '../components/VideoCardSkeleton';
 import { useApp } from '../context/AppContext';
-import { SortOption, TimeRange, Video } from '../types';
+import { SortOption, TimeRange } from '../types';
+
+const MasonryGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[8px] gap-4">
+    {children}
+  </div>
+);
+
+const MasonryItem: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const itemRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = itemRef.current;
+    if (!el) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (!el.parentElement) return;
+      const style = getComputedStyle(el.parentElement);
+      const rowHeight = parseFloat(style.getPropertyValue('grid-auto-rows')) || 1;
+      const rowGap = parseFloat(style.getPropertyValue('row-gap')) || 0;
+      const span = Math.max(1, Math.ceil((el.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap)));
+      el.style.gridRowEnd = `span ${span}`;
+    });
+
+    resizeObserver.observe(el);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  return (
+    <div ref={itemRef} className="break-inside-avoid">
+      {children}
+    </div>
+  );
+};
 
 export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ onVideoClick }) => {
   const { videos, isLoading } = useApp();
@@ -126,30 +158,20 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
           ))}
         </div>
       ) : filteredVideos.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <AnimatePresence initial={false}>
-            {filteredVideos.map(video => {
-              const showSkeleton = video.isHydrated === false || !video.uploader?.username || !video.coverUrl;
-              return (
-                <motion.div
-                  key={video.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.5, ease: [0.2, 0.6, 0.2, 1] }}
-                  className="break-inside-avoid"
-                >
-                  {showSkeleton ? (
-                    <VideoCardSkeleton ratio={video.aspectRatio} />
-                  ) : (
-                    <VideoCard video={video} onClick={() => onVideoClick(video.id)} />
-                  )}
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
-        </div>
+        <MasonryGrid>
+          {filteredVideos.map(video => {
+            const showSkeleton = video.isHydrated === false || !video.uploader?.username || !video.coverUrl;
+            return (
+              <MasonryItem key={video.id}>
+                {showSkeleton ? (
+                  <VideoCardSkeleton ratio={video.aspectRatio} />
+                ) : (
+                  <VideoCard video={video} onClick={() => onVideoClick(video.id)} />
+                )}
+              </MasonryItem>
+            )
+          })}
+        </MasonryGrid>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-gray-500 dark:text-gray-400">
             <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
