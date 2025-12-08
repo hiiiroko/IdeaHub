@@ -31,3 +31,6 @@ CODEDUMP.txt
 .env
 .vercel/
 .vercelignore
+
+# Doc
+.trae/

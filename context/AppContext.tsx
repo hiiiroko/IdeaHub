@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { toUiVideo } from '../services/adapters';
-import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos, fetchComments, fetchLikeStats, fetchLikeCountsForVideos } from '../services/interaction';
+import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos, fetchComments, fetchLikeStats, fetchLikeCountsForVideos, fetchViewCountsForVideos } from '../services/interaction';
 import { fetchVideos } from '../services/video';
 import { User, Video, Comment, SortOption } from '../types.ts';
 
@@ -85,6 +85,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         uiList = uiList.map(v => ({
           ...v,
           likeCount: likeCounts[v.id] ?? v.likeCount
+        }))
+      }
+
+      const viewCounts = await fetchViewCountsForVideos(videoIds)
+      if (Object.keys(viewCounts).length > 0) {
+        uiList = uiList.map(v => ({
+          ...v,
+          viewCount: viewCounts[v.id] ?? v.viewCount
         }))
       }
 

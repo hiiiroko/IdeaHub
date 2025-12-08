@@ -59,6 +59,21 @@ export const fetchLikeCountsForVideos = async (videoIds: string[]): Promise<Reco
   return counts
 }
 
+export const fetchViewCountsForVideos = async (videoIds: string[]): Promise<Record<string, number>> => {
+  if (videoIds.length === 0) return {}
+  const { data, error } = await supabase
+    .from('video_view_events')
+    .select('video_id')
+    .in('video_id', videoIds)
+
+  if (error || !data) return {}
+  const counts: Record<string, number> = {}
+  for (const row of data as Array<{ video_id: string }>) {
+    counts[row.video_id] = (counts[row.video_id] || 0) + 1
+  }
+  return counts
+}
+
 export const sendComment = async (
   videoId: string,
   content: string,
