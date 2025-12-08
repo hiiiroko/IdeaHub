@@ -28,11 +28,6 @@ dist-ssr
 CODEDUMP.txt
 
 # ENV
-.env.local
 .env
 .vercel/
 .vercelignore
-
-# Doc
-supabase_doc/
-.trae/
