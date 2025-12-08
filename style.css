@@ -1,4 +1,18 @@
-/* Tailwind is loaded via CDN in index.html; do not import here */
+@import 'tailwindcss';
+
+/* 关键：让 dark: 变体跟随 .dark class 生效，而不是系统 prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 把原来 CDN 里的主题配置迁移到 CSS-first theme 里 */
+@theme {
+  --color-primary: #3370ff;
+  --color-primary-hover: #285dc9;
+  --color-bg: #f5f6f7;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* 下面是你原来就有的滚动条样式，保持不变 */
 
 .modal-scroll:focus {
   outline: none;
