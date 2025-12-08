@@ -1,0 +1,17 @@
+系统级触发器与内部函数
+
+handle_new_user：Auth 用户注册后自动初始化 profile
+
+set_timestamp：通用更新时间戳函数，配合各表的 *_timestamp_* 触发器使用
+
+set_timestamp_videos：为 public.videos 表自动维护 updated_at
+
+set_timestamp_video_generation_tasks：为 public.video_generation_tasks 表自动维护 updated_at
+
+这些函数/触发器不对前端开放为 RPC，而是作为数据库内部机制存在。前端只需要遵守以下约定：
+
+假设所有通过 Auth 注册的用户，在 public.profiles 中都会有对应的一行记录（由 handle_new_user 创建）。
+
+不要手动写 updated_at 字段，所有更新时间戳一律由 set_timestamp 系列触发器自动维护。
+
+需要“最近更新时间”相关逻辑时，请使用各表的 updated_at 字段，而不是在前端自行维护。

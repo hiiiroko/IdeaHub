@@ -1,7 +1,7 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import React, { useMemo, useState, useEffect } from 'react';
 
 import { SearchIcon } from '../components/Icons';
+import { Masonry } from '../components/Masonry';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { VideoCard } from '../components/VideoCard';
 import { VideoCardSkeleton } from '../components/VideoCardSkeleton';
@@ -126,30 +126,22 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
           ))}
         </div>
       ) : filteredVideos.length > 0 ? (
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-          <AnimatePresence initial={false}>
-            {filteredVideos.map(video => {
-              const showSkeleton = video.isHydrated === false || !video.uploader?.username || !video.coverUrl;
-              return (
-                <motion.div
-                  key={video.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.5, ease: [0.2, 0.6, 0.2, 1] }}
-                  className="mb-4 break-inside-avoid"
-                >
-                  {showSkeleton ? (
-                    <VideoCardSkeleton ratio={video.aspectRatio} />
-                  ) : (
-                    <VideoCard video={video} onClick={() => onVideoClick(video.id)} />
-                  )}
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
-        </div>
+        <Masonry
+          items={filteredVideos}
+          responsive={{ base: 2, md: 3, lg: 4 }}
+          estimateHeight={(video: Video, cw: number) => {
+            const ratio = video.aspectRatio || 16 / 9;
+            return cw / ratio + 100;
+          }}
+          renderItem={(video: Video) => {
+            const showSkeleton = video.isHydrated === false || !video.uploader?.username || !video.coverUrl;
+            return showSkeleton ? (
+              <VideoCardSkeleton ratio={video.aspectRatio} />
+            ) : (
+              <VideoCard video={video} onClick={() => onVideoClick(video.id)} />
+            );
+          }}
+        />
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-gray-500 dark:text-gray-400">
             <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">

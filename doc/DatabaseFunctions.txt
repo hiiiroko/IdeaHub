@@ -1,0 +1,42 @@
+add_comment
+在指定视频下创建一条新评论。
+let { data, error } = await supabase
+  .rpc('add_comment', {
+    p_content, 
+    p_parent_comment_id, 
+    target_video_id
+  })
+if (error) console.error(error)
+else console.log(data)
+
+get_daily_likes_trend
+返回当前登录用户视频的“每日点赞趋势”数据，用于绘制折线图 / 柱状图。
+let { data, error } = await supabase
+  .rpc('get_daily_likes_trend')
+if (error) console.error(error)
+else console.log(data)
+
+get_interaction_stats
+返回当前登录用户所有视频的整体互动统计数据，用于仪表盘展示。
+let { data, error } = await supabase
+  .rpc('get_interaction_stats')
+if (error) console.error(error)
+else console.log(data)
+
+increment_view_count
+为指定视频记录一次“观看行为”。
+let { data, error } = await supabase
+  .rpc('increment_view_count', {
+    video_id
+  })
+if (error) console.error(error)
+else console.log(data)
+
+toggle_like
+切换当前登录用户对指定视频的“点赞”状态。
+let { data, error } = await supabase
+  .rpc('toggle_like', {
+    target_video_id
+  })
+if (error) console.error(error)
+else console.log(data)
