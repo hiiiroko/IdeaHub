@@ -67,11 +67,11 @@ export function Masonry<T>({
   }, [items, columnCount, columnGap, estimateHeight]);
 
   return (
-    <div ref={containerRef} className={`flex gap-4 ${className}`}>
+    <div ref={containerRef} className={`flex ${className}`} style={{ gap: columnGap }}>
       {columns.map((col, ci) => (
         <div key={ci} className="flex-1 min-w-0 flex flex-col">
           {col.items.map(({ idx, node }) => (
-            <div key={idx} className="mb-4">
+            <div key={idx} style={{ marginBottom: columnGap }}>
               {node}
             </div>
           ))}
@@ -80,4 +80,3 @@ export function Masonry<T>({
     </div>
   );
 }
-

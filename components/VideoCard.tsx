@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+
 import { Video } from '../types';
-import { HeartIcon, PlayIcon } from './Icons';
+
 import { FakeAvatar } from './FakeAvatar';
+import { HeartIcon, PlayIcon } from './Icons';
 
 interface VideoCardProps {
   video: Video;
@@ -35,7 +37,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
   }
   return (
     <div 
-        className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg cursor-pointer mb-4 break-inside-avoid transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
+        className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg cursor-pointer break-inside-avoid transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
         onClick={onClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
