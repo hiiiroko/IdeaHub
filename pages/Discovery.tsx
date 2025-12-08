@@ -7,8 +7,13 @@ import { VideoCardSkeleton } from '../components/VideoCardSkeleton';
 import { useApp } from '../context/AppContext';
 import { SortOption, TimeRange } from '../types';
 
+const MASONRY_ROW_HEIGHT = 8;
+
 const MasonryGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[8px] gap-4">
+  <div
+    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 [grid-auto-flow:row_dense]"
+    style={{ gridAutoRows: `${MASONRY_ROW_HEIGHT}px` }}
+  >
     {children}
   </div>
 );
@@ -18,18 +23,22 @@ const MasonryItem: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   useEffect(() => {
     const el = itemRef.current;
-    if (!el) return;
+    if (!el || !el.parentElement) return;
 
-    const resizeObserver = new ResizeObserver(() => {
-      if (!el.parentElement) return;
-      const style = getComputedStyle(el.parentElement);
-      const rowHeight = parseFloat(style.getPropertyValue('grid-auto-rows')) || 1;
-      const rowGap = parseFloat(style.getPropertyValue('row-gap')) || 0;
-      const span = Math.max(1, Math.ceil((el.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap)));
+    const parentStyle = getComputedStyle(el.parentElement);
+    const rowGap = parseFloat(parentStyle.getPropertyValue('row-gap')) || 0;
+    const base = MASONRY_ROW_HEIGHT;
+
+    const updateSpan = () => {
+      const fullHeight = el.getBoundingClientRect().height;
+      const span = Math.max(1, Math.ceil((fullHeight + rowGap) / (base + rowGap)));
       el.style.gridRowEnd = `span ${span}`;
-    });
+    };
 
+    updateSpan();
+    const resizeObserver = new ResizeObserver(updateSpan);
     resizeObserver.observe(el);
+
     return () => resizeObserver.disconnect();
   }, []);
 
