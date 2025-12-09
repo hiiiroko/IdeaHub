@@ -134,7 +134,6 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
           }
         }
         addVideo(uiVideo)
-        notifySuccess('上传成功', { id: 'video-upload' })
         const full = await fetchVideoById(dbVideo.id)
         if (full) {
           const hydrated = toUiVideo(full)

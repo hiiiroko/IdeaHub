@@ -35,7 +35,6 @@ export const VideoGenerateModal: React.FC<{
       if (onStart) onStart(params)
       const { id } = await create(params)
       console.log('start → created id:', id)
-      toastSuccess('任务已创建，可稍后刷新状态或在管理页查看')
     } catch (e: any) {
       toastError(e?.message || '生成失败')
       console.error('start → error:', e)
@@ -65,7 +64,7 @@ export const VideoGenerateModal: React.FC<{
     if (!videoUrl || !taskId) return
     // Just pass the info to parent, don't save to bucket yet
     onSaved({ taskId, videoUrl, coverUrl })
-    toastSuccess('视频已生成，请完善信息后发布')
+    toastSuccess('请完善视频信息')
     reset()
     setGenerating(false)
     onClose()

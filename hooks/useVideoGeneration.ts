@@ -100,7 +100,7 @@ export const useVideoGeneration = () => {
 
         setTaskId(id)
         setStatus('polling')
-        toastSuccess('生成任务已创建，正在处理…')
+        toastSuccess('生成任务已创建')
         console.log('[useVideoGeneration] create → taskId:', id)
         return { id }
       } catch (e: any) {
@@ -156,10 +156,9 @@ export const useVideoGeneration = () => {
         if (task.status === 'succeeded' && task.video_url) {
           setVideoUrl(task.video_url)
           setStatus('ready')
-          toastSuccess('生成完成，可以预览并发布')
+          toastSuccess('生成完成')
         } else {
           setStatus('polling')
-          toastSuccess('任务状态已更新')
         }
         return task
       } catch (e: any) {
