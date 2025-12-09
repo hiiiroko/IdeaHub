@@ -7,6 +7,7 @@ import { discardVideoGenerationTask } from '../services/videoGeneration';
 import type { VideoGenerationTask } from '../types/video';
 
 import { VideoGenerateResult } from './AI/VideoGenerateResult';
+import { VideoTaskSkeleton } from './AI/VideoTaskSkeleton';
 import { FakeAvatar } from './FakeAvatar';
 import { HomeIcon, PlusSquareIcon, LayoutGridIcon, LogOutIcon, EyeIcon, RefreshIcon } from './Icons';
 
@@ -18,7 +19,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onRequireAuth, onUseGeneratedVideo }) => {
-  const { currentUser, logout, isAuthLoading, theme, toggleTheme, generationTasks, updateGenerationTask, removeGenerationTask } = useApp();
+  const { currentUser, logout, isAuthLoading, theme, toggleTheme, generationTasks, isGenerationTasksLoading, updateGenerationTask, removeGenerationTask } = useApp();
   const { refresh } = useVideoGeneration();
 
   const navItems = [
@@ -250,26 +251,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
         })}
       </nav>
 
-      <div className="px-4 pb-2">
-        <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 视频生成任务</h3>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{visibleTasks.length}</span>
-          </div>
-          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-            {visibleTasks.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">最近暂无生成任务</p>
-            ) : (
-              visibleTasks.map(task => (
-                <div
-                  key={task.id}
-                  className="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700"
-                >
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2 justify-between">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={task.prompt}>{task.prompt}</p>
+      {currentUser && (
+        <div className="px-4 pb-2">
+          <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 视频生成任务</h3>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{visibleTasks.length}</span>
+            </div>
+            <div className="space-y-2 max-h-60 overflow-y-auto px-1">
+              {isGenerationTasksLoading ? (
+                <VideoTaskSkeleton />
+              ) : visibleTasks.length === 0 ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">最近暂无生成任务</p>
+              ) : (
+                visibleTasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700"
+                  >
+                    <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center justify-between gap-1">
                       <span
-                        className={`text-[11px] px-2 py-0.5 rounded-full capitalize ${
+                        className={`inline-flex items-center px-2 py-1 text-[11px] rounded-md capitalize ${
                           task.status === 'succeeded'
                             ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200'
                             : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200'
@@ -277,37 +280,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
                       >
                         {task.status}
                       </span>
+                      {['queued', 'running'].includes(task.status) ? (
+                        <button
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-md border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50"
+                          onClick={() => handleRefreshTask(task)}
+                          disabled={refreshingTaskId === task.external_task_id}
+                        >
+                          <RefreshIcon className={`w-4 h-4 ${refreshingTaskId === task.external_task_id ? 'animate-spin' : ''}`} />
+                          刷新
+                        </button>
+                      ) : (
+                        <button
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-md bg-primary text-white hover:bg-primary-hover disabled:opacity-50"
+                          onClick={() => handleViewTask(task)}
+                          disabled={!task.video_url}
+                        >
+                          <EyeIcon className="w-4 h-4" />
+                          查看
+                        </button>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-300 truncate">{task.resolution} · {task.ratio} · {task.duration}s</p>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500">{formatRelativeTime(task.created_at)}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 truncate" title={task.prompt}>{task.prompt}</p>
+                      <div className="flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500">
+                        <span>{formatRelativeTime(task.created_at)}</span>
+                        <span>{`${task.resolution} · ${task.ratio} · ${task.duration}s`}</span>
+                      </div>
+                    </div>
+                    
                   </div>
-                  <div className="flex flex-col items-end gap-2 min-w-[90px]">
-                    {['queued', 'running'].includes(task.status) ? (
-                      <button
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50"
-                        onClick={() => handleRefreshTask(task)}
-                        disabled={refreshingTaskId === task.external_task_id}
-                      >
-                        <RefreshIcon className={`w-4 h-4 ${refreshingTaskId === task.external_task_id ? 'animate-spin' : ''}`} />
-                        刷新
-                      </button>
-                    ) : (
-                      <button
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg bg-primary text-white hover:bg-primary-hover disabled:opacity-50"
-                        onClick={() => handleViewTask(task)}
-                        disabled={!task.video_url}
-                      >
-                        <EyeIcon className="w-4 h-4" />
-                        查看
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {isAuthLoading ? (
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">

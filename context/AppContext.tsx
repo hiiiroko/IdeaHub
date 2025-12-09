@@ -28,6 +28,7 @@ interface AppState {
   isAuthLoading: boolean;
   theme: 'light' | 'dark';
   generationTasks: VideoGenerationTask[];
+  isGenerationTasksLoading: boolean;
 }
 
 interface AppContextType extends AppState {
@@ -67,6 +68,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [generationTasks, setGenerationTasks] = useState<VideoGenerationTask[]>([]);
+  const [isGenerationTasksLoading, setIsGenerationTasksLoading] = useState<boolean>(false);
 
   /**
    * 刷新视频列表并补全点赞状态
@@ -124,10 +126,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadRecentGenerationTasks = useCallback(async () => {
     if (!currentUser) return;
     try {
+      setIsGenerationTasksLoading(true);
       const tasks = await fetchRecentVideoGenerationTasks(currentUser.id);
       replaceGenerationTasks(tasks);
     } catch (e) {
       console.error('Failed to load recent AI generation tasks', e);
+    }
+    finally {
+      setIsGenerationTasksLoading(false);
     }
   }, [currentUser, replaceGenerationTasks]);
 
@@ -288,6 +294,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isLoading,
     isAuthLoading: authLoading,
     generationTasks,
+    isGenerationTasksLoading,
     theme,
     login,
     logout,
@@ -311,6 +318,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isLoading,
     authLoading,
     generationTasks,
+    isGenerationTasksLoading,
     theme,
     login,
     logout,
