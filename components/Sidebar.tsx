@@ -6,6 +6,7 @@ import { toastError, toastSuccess } from '../services/utils';
 import { discardVideoGenerationTask } from '../services/videoGeneration';
 import type { VideoGenerationTask } from '../types/video';
 
+import { VideoGenerateModal } from './AI/VideoGenerateModal';
 import { VideoGenerateResult } from './AI/VideoGenerateResult';
 import { VideoTaskSkeleton } from './AI/VideoTaskSkeleton';
 import { FakeAvatar } from './FakeAvatar';
@@ -35,6 +36,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
   const [viewTask, setViewTask] = useState<VideoGenerationTask | null>(null)
   const [usingFromSidebar, setUsingFromSidebar] = useState(false)
   const [discardingTask, setDiscardingTask] = useState(false)
+  const [adjustOpen, setAdjustOpen] = useState(false)
+  const [adjustPrompt, setAdjustPrompt] = useState<string>('')
 
   useEffect(() => {
     const activeBtn = btnRefs.current[currentPage]
@@ -95,12 +98,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
     setRefreshingTaskId(task.external_task_id)
     try {
       const updated = await refresh(task.external_task_id)
-      if (updated) {
-        updateGenerationTask(updated.id, updated)
-        if (updated.status === 'succeeded' && updated.video_url) {
-          toastSuccess('生成完成')
+        if (updated) {
+          updateGenerationTask(updated.id, updated)
+          if (updated.status !== 'succeeded') {
+            toastSuccess('任务仍在进行中，请稍后再试')
+          }
         }
-      }
     } catch (e: any) {
       console.error(e)
       toastError(e?.message || '刷新任务失败')
@@ -166,6 +169,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
       return
     }
     setViewTask(task)
+  }
+
+  const handleAdjustFromView = () => {
+    if (!viewTask) return
+    setAdjustPrompt(viewTask.prompt || '')
+    setViewTask(null)
+    setAdjustOpen(true)
   }
 
   return (
@@ -258,7 +268,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 视频生成任务</h3>
               <span className="text-xs text-gray-500 dark:text-gray-400">{visibleTasks.length}</span>
             </div>
-            <div className="space-y-2 max-h-60 overflow-y-auto px-1">
+            <div className="space-y-2 max-h-[304px] overflow-y-auto px-1 tasks-scroll">
               {isGenerationTasksLoading ? (
                 <VideoTaskSkeleton />
               ) : visibleTasks.length === 0 ? (
@@ -267,7 +277,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
                 visibleTasks.map(task => (
                   <div
                     key={task.id}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700"
+                    className="flex items-start gap-3 p-3 min-h-24 rounded-xl bg-white dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700"
                   >
                     <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center justify-between gap-1">
@@ -382,11 +392,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
                 onSave={handleUseTask}
                 onDiscard={() => handleDiscardTask(viewTask)}
                 discarding={discardingTask}
+                onAdjust={handleAdjustFromView}
               />
             </div>
           </div>
         </div>
       )}
+
+      <VideoGenerateModal
+        open={adjustOpen}
+        onClose={() => setAdjustOpen(false)}
+        onSaved={(result) => {
+          if (onUseGeneratedVideo) {
+            onUseGeneratedVideo(result)
+            onNavigate('create')
+          }
+        }}
+        prefill={{ prompt: adjustPrompt }}
+      />
     </div>
   );
 };

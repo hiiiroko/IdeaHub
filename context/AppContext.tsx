@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
-import toast from 'react-hot-toast';
 
-import { useAuth } from '../hooks/useAuth';
-import { useTheme } from '../hooks/useTheme';
-import { toUiVideo } from '../services/adapters';
-import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos, fetchComments, fetchLikeStats, fetchLikeCountsForVideos, fetchViewCountsForVideos } from '../services/interaction';
-import { fetchVideos } from '../services/video';
-import { fetchRecentVideoGenerationTasks } from '../services/videoGeneration';
-import type { VideoGenerationTask } from '../types/video';
-import { User, Video, Comment, SortOption } from '../types.ts';
+import { notifySuccess, notifyError } from '../utils/notify';
+
+import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
+import { toUiVideo } from '@/services/adapters';
+import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos, fetchComments, fetchLikeStats, fetchLikeCountsForVideos, fetchViewCountsForVideos } from '@/services/interaction';
+import { fetchVideos } from '@/services/video';
+import { fetchRecentVideoGenerationTasks } from '@/services/videoGeneration';
+import type { VideoGenerationTask } from '@/types/video';
+import { User, Video, Comment, SortOption } from '@/types.ts';
 
 /**
  * 应用上下文（AppContext）模块
@@ -217,14 +218,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await toggleLikeVideo(videoId);
       const stats = await fetchLikeStats(videoId);
       setVideos(prev => prev.map(v => v.id === videoId ? { ...v, isLiked: stats.isLiked, likeCount: stats.likeCount } : v));
-      toast.success(stats.isLiked ? '点赞成功' : '已取消点赞');
+      notifySuccess(stats.isLiked ? '点赞成功' : '已取消点赞');
     } catch (e) {
       console.error('toggleLike failed', e);
       setVideos(prev => snapshot
         ? prev.map(v => v.id === videoId ? { ...v, isLiked: snapshot?.isLiked ?? v.isLiked, likeCount: snapshot?.likeCount ?? v.likeCount } : v)
         : toggleLikeInList(prev, videoId)
       );
-      toast.error('点赞失败，请稍后重试');
+      notifyError('点赞失败，请稍后重试');
     }
   }, []);
 
@@ -233,7 +234,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    */
   const addComment = useCallback(async (videoId: string, content: string, parentId: string | null = null) => {
     if (!currentUser) {
-      toast.error('请先登录后再评论');
+      notifyError('请先登录后再评论');
       return;
     }
     try {
@@ -248,10 +249,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           commentCount: total,
         };
       }));
-      toast.success('评论已发送');
+      notifySuccess('评论已发送');
     } catch (e: any) {
       console.error('Failed to send comment', e);
-      toast.error(e?.message || '评论发送失败');
+      notifyError(e?.message || '评论发送失败');
     }
   }, [currentUser, fetchComments]);
 

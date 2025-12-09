@@ -38,25 +38,46 @@ export const useVideoGeneration = () => {
 
   const handleInvokeError = (prefix: string, invokeError: any, fallback: string) => {
     console.error(`${prefix} → error:`, invokeError)
-    const msg = invokeError?.message || invokeError?.error || fallback
+    const rawMsg = invokeError?.message || invokeError?.error || ''
+    const isBusy = (invokeError?.name === 'FunctionsHttpError') || /Edge Function returned a non-2xx status code/i.test(rawMsg) || /\b400\b/i.test(rawMsg)
+    const msg = isBusy ? 'Supabase服务忙，请稍后再试' : (rawMsg || fallback)
     setError(msg)
     setLastError(msg)
-    toastError(msg.startsWith('生成') ? msg : `${fallback}：${msg}`)
+    const toastMsg = isBusy
+      ? (fallback.includes('任务状态同步失败')
+          ? '任务状态同步失败：Supabase 服务忙'
+          : fallback.includes('生成任务创建失败')
+            ? '生成任务创建失败：Supabase 服务忙'
+            : fallback.includes('发布生成视频失败')
+              ? '发布生成视频失败：Supabase 服务忙'
+              : 'Supabase 服务忙')
+      : (msg.startsWith('生成') ? msg : `${fallback}：${msg}`)
+    toastError(toastMsg)
     setStatus('error')
     setLoading(false)
   }
 
   const normalizeCatchError = (prefix: string, e: any, fallback: string) => {
     console.error(`${prefix} → error:`, e)
-    const msg =
-      e?.message?.includes('Failed to send a request to the Edge Function')
+    const rawMsg = e?.message || ''
+    const isBusy = (e?.name === 'FunctionsHttpError') || /Edge Function returned a non-2xx status code/i.test(rawMsg) || /\b400\b/i.test(rawMsg)
+    const msg = isBusy
+      ? 'Supabase服务忙，请稍后再试'
+      : (e?.message?.includes('Failed to send a request to the Edge Function')
         ? '生成服务暂时不可用，请稍后重试'
-        : e instanceof Error
-          ? e.message
-          : fallback
+        : (e instanceof Error ? e.message : fallback))
     setError(msg)
     setLastError(msg)
-    toastError(msg.startsWith('生成') ? msg : `${fallback}：${msg}`)
+    const toastMsg = isBusy
+      ? (fallback.includes('任务状态同步失败')
+          ? '任务状态同步失败：Supabase 服务忙'
+          : fallback.includes('生成任务创建失败')
+            ? '生成任务创建失败：Supabase 服务忙'
+            : fallback.includes('发布生成视频失败')
+              ? '发布生成视频失败：Supabase 服务忙'
+              : 'Supabase 服务忙')
+      : (msg.startsWith('生成') ? msg : `${fallback}：${msg}`)
+    toastError(toastMsg)
     setStatus('error')
     setLoading(false)
     return msg
@@ -76,8 +97,6 @@ export const useVideoGeneration = () => {
       }
 
       const body = { action: 'create', ...params }
-      console.log('[useVideoGeneration] start → params:', params)
-      console.log('[useVideoGeneration] create → body:', body)
 
       try {
         const { data, error: invokeError } = await supabase.functions.invoke('generate-video', {
@@ -101,7 +120,6 @@ export const useVideoGeneration = () => {
         setTaskId(id)
         setStatus('polling')
         toastSuccess('生成任务已创建')
-        console.log('[useVideoGeneration] create → taskId:', id)
         return { id }
       } catch (e: any) {
         normalizeCatchError('[useVideoGeneration] start', e, '生成任务创建失败，请稍后重试')
@@ -136,7 +154,6 @@ export const useVideoGeneration = () => {
       }
 
       try {
-        console.log('[useVideoGeneration] sync_from_ark → body:', { action: 'sync_from_ark', taskId: effectiveId })
         const { data, error: invokeError } = await supabase.functions.invoke('generate-video', {
           body: {
             action: 'sync_from_ark',
@@ -194,11 +211,6 @@ export const useVideoGeneration = () => {
       }
 
       try {
-        console.log('[useVideoGeneration] publish → body:', {
-          action: 'download',
-          taskId: taskIdToPublish,
-          ...meta,
-        })
         const { data, error: invokeError } = await supabase.functions.invoke('generate-video', {
           body: {
             action: 'download',

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+
 import { useApp } from '../context/AppContext'
 import { resendEmailConfirmation } from '../services/auth'
 import { toastError, toastSuccess } from '../services/utils'

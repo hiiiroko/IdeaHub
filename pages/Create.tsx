@@ -9,7 +9,7 @@ import { toUiVideo } from '../services/adapters';
 import { parseTags, toastError } from '../services/utils';
 import { uploadVideo, fetchVideoById, updateVideoAspectRatio } from '../services/video';
 import { Video } from '../types';
-import { getVideoDuration, getImageAspectRatioFromUrl } from '../utils/media';
+import { getVideoDuration, getImageAspectRatioFromUrl, captureFirstFrame } from '../utils/media';
 import { notifySuccess } from '../utils/notify';
 
 type AiPrefill = { taskId: string; videoUrl: string; coverUrl: string | null }
@@ -277,6 +277,29 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
             <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">封面图片（JPG/PNG）</label>
                 <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center h-48 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)] ${previews.cover ? 'border-primary bg-blue-50/30 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!previews.video) return
+                        try {
+                          setPreviewLoadingCover(true)
+                          const blob = await captureFirstFrame(previews.video)
+                          const file = new File([blob], 'cover-first-frame.jpg', { type: 'image/jpeg' })
+                          const url = URL.createObjectURL(blob)
+                          setFiles(prev => ({ ...prev, cover: file }))
+                          setPreviews(prev => ({ ...prev, cover: url }))
+                          setInvalid(prev => ({ ...prev, cover: false }))
+                        } catch (e) {
+                          toastError('截取首帧失败，请稍后再试')
+                          setPreviewLoadingCover(false)
+                        }
+                      }}
+                      disabled={!previews.video || !!aiTaskId}
+                      className="aigc-btn absolute top-2 right-2 z-10 text-xs px-2 py-1 rounded disabled:cursor-not-allowed"
+                      title="从视频首帧生成封面"
+                    >
+                      <span>截取视频首帧</span>
+                    </button>
                     {previews.cover ? (
                          <div className="relative w-full h-full flex items-center justify-center">
                             <img src={previews.cover} className="h-full max-w-full object-cover rounded-lg" alt="preview" onLoad={() => setPreviewLoadingCover(false)} />
@@ -405,6 +428,8 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
       .aigc-btn::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#22d3ee 0%,#ef4444 50%,#22d3ee 100%);background-size:200% 100%;opacity:1;z-index:0;animation:aigcFlow 3s linear infinite}
       .aigc-btn>span{position:relative;z-index:1}
       .aigc-btn{box-shadow:0 0 0 1px rgba(0,0,0,.1)}
+      .aigc-btn:disabled::before{filter:brightness(0.85)}
+      .aigc-btn:disabled{cursor:not-allowed}
       @keyframes aigcFlow{0%{background-position:0% 0%}100%{background-position:200% 0%}}
       .aigc-skeleton{width:100%;max-width:420px;background:linear-gradient(90deg,rgba(34,211,238,.25),rgba(239,68,68,.25),rgba(34,211,238,.25));background-size:200% 100%;animation:aigcFlow 2s linear infinite}
       .aigc-spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.6);border-top-color:#22d3ee;border-right-color:#ef4444;border-radius:50%;animation:spin 1s linear infinite}

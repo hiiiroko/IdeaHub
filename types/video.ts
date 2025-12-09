@@ -5,7 +5,7 @@ export interface GenerateVideoParams {
   prompt: string
   resolution: Resolution
   ratio: Ratio
-  duration: 3 | 4 | 5
+  duration: number
   fps?: 16 | 24
 }
 

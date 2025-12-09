@@ -26,6 +26,18 @@ export const VideoGenerateForm: React.FC<VideoGenerateFormProps> = ({
       <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">AI 生成视频</h3>
 
       <div className="space-y-1">
+        <label className="text-xs text-gray-500 dark:text-gray-400">提示词</label>
+        <textarea
+          rows={3}
+          value={params.prompt}
+          onChange={(e)=>setParams({ ...params, prompt: e.target.value })}
+          disabled={generating || saving}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors"
+          placeholder="例如：夏日海滩·慢动作·轻快背景乐·广告片风格"
+        />
+      </div>
+
+      <div className="space-y-1">
         <label className="text-xs text-gray-500 dark:text-gray-400">分辨率</label>
         <SegmentedControl
           options={VIDEO_RESOLUTIONS}
@@ -58,7 +70,7 @@ export const VideoGenerateForm: React.FC<VideoGenerateFormProps> = ({
             max={VIDEO_DURATIONS.MAX}
             step={VIDEO_DURATIONS.STEP}
             value={params.duration}
-            onChange={(e)=>setParams({ ...params, duration: Number(e.target.value) as any })}
+            onChange={(e)=>setParams({ ...params, duration: Number(e.target.value) })}
             className="w-full"
           />
         </div>

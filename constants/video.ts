@@ -15,8 +15,8 @@ export const VIDEO_FPS_OPTIONS: { value: number; label: string }[] = [
 ];
 
 export const VIDEO_DURATIONS = {
-  MIN: 3,
-  MAX: 5,
+  MIN: 2,
+  MAX: 12,
   STEP: 1,
-  DEFAULT: 3
+  DEFAULT: 5
 };

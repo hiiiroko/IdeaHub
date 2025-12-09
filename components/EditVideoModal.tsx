@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
+
 import { useApp } from '../context/AppContext'
-import { updateVideo as updateVideoSvc } from '../services/video'
 import { parseTags } from '../services/utils'
+import { updateVideo as updateVideoSvc } from '../services/video'
 import type { Video } from '../types'
 
 export const EditVideoModal: React.FC<{ video: Video; onClose: () => void }> = ({ video, onClose }) => {

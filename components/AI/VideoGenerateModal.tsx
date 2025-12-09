@@ -16,14 +16,15 @@ export const VideoGenerateModal: React.FC<{
   onSaved: (result: { taskId: string; videoUrl: string; coverUrl: string | null }) => void
   onStart?: (params: GenerateVideoParams) => void
   onReset?: () => void
-}> = ({ open, onClose, onSaved, onStart, onReset }) => {
-  const { currentUser, removeGenerationTask, setGenerationTasks } = useApp()
+  prefill?: Partial<GenerateVideoParams>
+}> = ({ open, onClose, onSaved, onStart, onReset, prefill }) => {
+  const { currentUser, removeGenerationTask, setGenerationTasks, updateGenerationTask } = useApp()
   const { create, refresh, error, videoUrl, taskId, reset } = useVideoGeneration()
   const [params, setParams] = useState<GenerateVideoParams>({
     prompt: '',
     resolution: VIDEO_RESOLUTIONS[0].value,
     ratio: VIDEO_RATIOS[0].value,
-    duration: VIDEO_DURATIONS.DEFAULT as 3|4|5,
+    duration: VIDEO_DURATIONS.DEFAULT,
     fps: VIDEO_FPS_OPTIONS[0].value as 16|24
   })
   const [generating, setGenerating] = useState(false)
@@ -64,6 +65,11 @@ export const VideoGenerateModal: React.FC<{
       setLatestTask(task)
       if (task.last_frame_url) {
         setCoverUrl(task.last_frame_url)
+      }
+      updateGenerationTask(task.id, task)
+      if (currentUser) {
+        const tasks = await fetchRecentVideoGenerationTasks(currentUser.id)
+        setGenerationTasks(tasks)
       }
       if (task.status !== 'succeeded') {
         toastSuccess('任务仍在进行中，请稍后再试')
@@ -128,8 +134,10 @@ export const VideoGenerateModal: React.FC<{
       setLatestTask(null)
       setDiscarding(false)
       if (onReset) onReset()
+    } else if (prefill) {
+      setParams(prev => ({ ...prev, ...prefill }))
     }
-  }, [open, reset, onReset])
+  }, [open, reset, onReset, prefill])
 
   if (!open) return null
 

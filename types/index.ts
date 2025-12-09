@@ -45,5 +45,5 @@ export interface CommentWithReplies extends Comment {
   replies: Array<Comment & { user: Profile }>
 }
 
-// Legacy support or UI specific interfaces
-export interface UserProfile extends Profile {}
+// Legacy support or UI specific alias
+export type UserProfile = Profile
