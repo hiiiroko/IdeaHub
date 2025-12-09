@@ -40,7 +40,10 @@ export const discardVideoGenerationTask = async (
 
   query = id ? query.eq('id', id) : query.eq('external_task_id', externalTaskId as string)
 
-  const { error } = await query
+  const { data, error } = await query.select('id, is_discarded').maybeSingle()
   if (error) throw error
+  if (!data) {
+    throw new Error('未找到对应的生成任务，无法丢弃')
+  }
 }
 

@@ -4,7 +4,7 @@ import { VIDEO_RESOLUTIONS, VIDEO_RATIOS, VIDEO_FPS_OPTIONS, VIDEO_DURATIONS } f
 import { useApp } from '../../context/AppContext'
 import { useVideoGeneration } from '../../hooks/useVideoGeneration'
 import { toastError, toastSuccess } from '../../services/utils'
-import { discardVideoGenerationTask } from '../../services/videoGeneration'
+import { discardVideoGenerationTask, fetchRecentVideoGenerationTasks } from '../../services/videoGeneration'
 import type { GenerateVideoParams, VideoGenerationTask } from '../../types/video'
 
 import { VideoGenerateForm } from './VideoGenerateForm'
@@ -17,7 +17,7 @@ export const VideoGenerateModal: React.FC<{
   onStart?: (params: GenerateVideoParams) => void
   onReset?: () => void
 }> = ({ open, onClose, onSaved, onStart, onReset }) => {
-  const { currentUser, removeGenerationTask } = useApp()
+  const { currentUser, removeGenerationTask, setGenerationTasks } = useApp()
   const { create, refresh, error, videoUrl, taskId, reset } = useVideoGeneration()
   const [params, setParams] = useState<GenerateVideoParams>({
     prompt: '',
@@ -41,6 +41,10 @@ export const VideoGenerateModal: React.FC<{
       if (onStart) onStart(params)
       const { id } = await create(params)
       console.log('start → created id:', id)
+      if (id && currentUser) {
+        const tasks = await fetchRecentVideoGenerationTasks(currentUser.id)
+        setGenerationTasks(tasks)
+      }
     } catch (e: any) {
       toastError(e?.message || '生成失败')
       console.error('start → error:', e)
