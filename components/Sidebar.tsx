@@ -14,7 +14,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onRequireAuth }) => {
   const { currentUser, logout, isAuthLoading, theme, toggleTheme } = useApp();
-  const { tasks, refreshTask, openPreview } = useVideoGenerationTasks();
+  const { tasks, refreshTask, openPreview, clearTasks } = useVideoGenerationTasks();
 
   const navItems = [
     { id: 'discovery', label: '创意', icon: HomeIcon },
@@ -144,18 +144,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
       {tasks.length > 0 && (
         <div className="px-4 pb-3 space-y-2">
           <p className="text-xs text-gray-500 dark:text-gray-400">正在生成的视频</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2">
             {tasks.map(task => {
               const ready = task.status === 'succeeded' && !!task.videoUrl
               return (
                 <div
                   key={task.taskId}
-                  className="flex items-center gap-2 px-3 py-2 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200 border border-blue-100 dark:border-blue-800"
+                  className="flex items-center justify-between px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium"
                 >
-                  <span className="text-xs font-mono">#{task.taskId.slice(-5)}</span>
+                  <span className="text-xs font-mono">任务ID：{task.taskId.slice(-5)}</span>
                   <button
                     type="button"
-                    className="w-6 h-6 inline-flex items-center justify-center rounded-full bg-white/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-200 hover:bg-white dark:hover:bg-blue-900 transition"
+                    className="ml-auto w-6 h-6 inline-flex items-center justify-center rounded-full bg-white/70 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-700 transition"
                     onClick={() => ready ? openPreview(task.taskId) : refreshTask(task.taskId)}
                     title={ready ? '查看生成视频' : '刷新状态'}
                   >
@@ -197,7 +197,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
             )
           })()}
           <button
-            onClick={async () => { await logout(); onNavigate('discovery'); }}
+            onClick={async () => { await logout(); clearTasks(); onNavigate('discovery'); }}
             className="group w-full flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-md transition-colors"
           >
             <span className="flex items-center gap-2 transition-all duration-500 ease-in-out -ml-3 group-hover:ml-0">

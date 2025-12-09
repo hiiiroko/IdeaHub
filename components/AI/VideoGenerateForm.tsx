@@ -1,6 +1,9 @@
 import React from 'react'
 
 import { VIDEO_RESOLUTIONS, VIDEO_RATIOS, VIDEO_FPS_OPTIONS, VIDEO_DURATIONS } from '../../constants/video'
+import { useVideoGenerationTasks } from '../../context/VideoGenerationTasksContext'
+import { MAX_CONCURRENT_TASKS } from '../../context/VideoGenerationTasksContext'
+import { toastError } from '../../services/utils'
 import type { GenerateVideoParams } from '../../types/video'
 import { SegmentedControl } from '../SegmentedControl'
 
@@ -21,6 +24,16 @@ export const VideoGenerateForm: React.FC<VideoGenerateFormProps> = ({
   onClose,
   onStart
 }) => {
+  const { tasks } = useVideoGenerationTasks()
+  const isFull = tasks.length >= MAX_CONCURRENT_TASKS
+
+  const handleStart = () => {
+    if (isFull) {
+      toastError('生成视频队列已满')
+      return
+    }
+    onStart()
+  }
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">AI 生成视频</h3>
@@ -85,7 +98,7 @@ export const VideoGenerateForm: React.FC<VideoGenerateFormProps> = ({
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <button disabled={generating} onClick={onClose} className="px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50">取消</button>
-        <button disabled={generating} onClick={onStart} className="px-4 py-2 rounded bg-primary text-white disabled:opacity-50">开始生成</button>
+        <button aria-disabled={isFull || generating} onClick={handleStart} className={`px-4 py-2 rounded bg-primary text-white ${isFull ? 'opacity-50 cursor-not-allowed' : ''}`}>开始生成</button>
       </div>
     </div>
   )

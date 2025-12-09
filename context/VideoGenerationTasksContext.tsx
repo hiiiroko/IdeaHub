@@ -12,6 +12,8 @@ export interface TrackedVideoTask {
   loading?: boolean
 }
 
+export const MAX_CONCURRENT_TASKS = 3
+
 interface PendingUseResult {
   taskId: string
   videoUrl: string
@@ -25,6 +27,7 @@ interface VideoGenerationTasksContextValue {
   addTask: (taskId: string, initial?: Partial<TrackedVideoTask>) => void
   updateTask: (taskId: string, patch: Partial<TrackedVideoTask>) => void
   removeTask: (taskId: string) => void
+  clearTasks: () => void
   refreshTask: (taskId: string) => Promise<VideoGenerationTask | null>
   openPreview: (taskId: string) => void
   closePreview: () => void
@@ -55,6 +58,12 @@ export const VideoGenerationTasksProvider: React.FC<{ children: React.ReactNode 
   const removeTask = useCallback((taskId: string) => {
     setTasks(prev => prev.filter(t => t.taskId !== taskId))
     setPreviewTaskId(prev => (prev === taskId ? null : prev))
+  }, [])
+
+  const clearTasks = useCallback(() => {
+    setTasks([])
+    setPreviewTaskId(null)
+    setPendingUseResult(null)
   }, [])
 
   const getAccessToken = useCallback(async (): Promise<string | null> => {
@@ -127,6 +136,7 @@ export const VideoGenerationTasksProvider: React.FC<{ children: React.ReactNode 
     addTask,
     updateTask,
     removeTask,
+    clearTasks,
     refreshTask,
     openPreview,
     closePreview,
