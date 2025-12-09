@@ -11,6 +11,7 @@ import { VideoGenerateResult } from './AI/VideoGenerateResult';
 import { VideoTaskSkeleton } from './AI/VideoTaskSkeleton';
 import { FakeAvatar } from './FakeAvatar';
 import { HomeIcon, PlusSquareIcon, LayoutGridIcon, LogOutIcon, EyeIcon, RefreshIcon } from './Icons';
+import { ThemeToggle } from './ThemeToggle';
 
 interface SidebarProps {
   currentPage: string;
@@ -185,54 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
             <span className="text-white font-bold select-none">I</span>
         </div>
         <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 tracking-tight">IdeaHub</h1>
-        <button
-          aria-label="Toggle dark mode"
-          onClick={toggleTheme}
-          className="ml-auto relative inline-flex items-center w-12 h-6 rounded-full border select-none border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)] overflow-hidden"
-        >
-          <span
-            className={"absolute top-1/2 -translate-y-1/2 inline-block w-5 h-5 rounded-full bg-white dark:bg-gray-200 shadow"}
-            style={{ left: theme === 'dark' ? 'calc(100% - 22px)' : '2px', transition: 'left 300ms ease-in-out' }}
-          ></span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            className="absolute w-3 h-3 text-gray-500 dark:text-gray-400 pointer-events-none"
-            style={{
-              left: theme === 'light' ? 'calc(100% - 14px)' : 'calc(100% + 10px)',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              opacity: theme === 'light' ? 1 : 0,
-              transition: 'left 300ms ease-in-out, opacity 300ms ease-in-out'
-            }}
-          >
-            <path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
-          </svg>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            className="absolute w-3 h-3 text-gray-500 dark:text-gray-400 pointer-events-none"
-            style={{
-              left: theme === 'dark' ? '6px' : '-10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              opacity: theme === 'dark' ? 1 : 0,
-              transition: 'left 300ms ease-in-out, opacity 300ms ease-in-out'
-            }}
-          >
-            <circle cx="12" cy="12" r="5" fill="currentColor"/>
-            <g stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="1" x2="12" y2="4"/>
-              <line x1="12" y1="20" x2="12" y2="23"/>
-              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
-              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
-              <line x1="1" y1="12" x2="4" y2="12"/>
-              <line x1="20" y1="12" x2="23" y2="12"/>
-              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
-              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
-            </g>
-          </svg>
-        </button>
+        <ThemeToggle theme={theme as 'light' | 'dark'} onToggle={toggleTheme} />
       </div>
 
       <nav ref={navRef} className="relative flex-1 px-3 py-4 space-y-1">
@@ -263,12 +217,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
 
       {currentUser && (
         <div className="px-4 pb-2">
-          <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 shadow-sm">
+          <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 shadow-sm transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 视频生成任务</h3>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{visibleTasks.length}</span>
+              <button
+                type="button"
+                onClick={() => { setAdjustPrompt(''); setAdjustOpen(true) }}
+                className="group relative w-6 h-6 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-[11px] text-gray-600 dark:text-gray-300 hover:bg-primary hover:text-white transition-colors"
+                aria-label="新建 AI 生成任务"
+                title="新建 AI 生成任务"
+              >
+                <span className="group-hover:hidden select-none">{visibleTasks.length}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  className="hidden group-hover:block w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
             </div>
-            <div className="space-y-2 max-h-[304px] overflow-y-auto px-1 tasks-scroll">
+            <div className="space-y-2 max-h-[316px] overflow-y-auto px-1 tasks-scroll">
               {isGenerationTasksLoading ? (
                 <VideoTaskSkeleton />
               ) : visibleTasks.length === 0 ? (
@@ -277,16 +252,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
                 visibleTasks.map(task => (
                   <div
                     key={task.id}
-                    className="flex items-start gap-3 p-3 min-h-24 rounded-xl bg-white dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700"
+                    className="flex items-start gap-3 p-3 min-h-24 rounded-xl bg-white dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
                   >
-                    <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-center justify-between gap-1">
                       <span
                         className={`inline-flex items-center px-2 py-1 text-[11px] rounded-md capitalize ${
                           task.status === 'succeeded'
                             ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200'
                             : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200'
-                        }`}
+                        } transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]`}
                       >
                         {task.status}
                       </span>

@@ -221,7 +221,7 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
                     <button
                       type="button"
                       onClick={() => setAiOpen(true)}
-                      className="aigc-btn absolute top-2 right-2 z-10 text-xs px-2 py-1 rounded"
+                      className="ai-solid-btn absolute top-2 right-2 z-10 text-xs px-2 py-1 rounded"
                     ><span>AI 生成视频</span></button>
                     {previews.video ? (
                         <div className="relative w-full h-full flex items-center justify-center group">
@@ -242,13 +242,7 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
                             <UploadIcon className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
                             <p className="text-sm text-gray-500 dark:text-gray-400">点击上传视频</p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">MP4 不超过 15MB</p>
-                            {aiGenerating && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="aigc-skeleton w-11/12 h-5/6 rounded-lg flex items-center justify-center">
-                                  <div className="aigc-spinner"></div>
-                                </div>
-                              </div>
-                            )}
+                            
                         </>
                     )}
                     <input 
@@ -295,7 +289,7 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
                         }
                       }}
                       disabled={!previews.video || !!aiTaskId}
-                      className="aigc-btn absolute top-2 right-2 z-10 text-xs px-2 py-1 rounded disabled:cursor-not-allowed"
+                      className="ai-solid-btn absolute top-2 right-2 z-10 text-xs px-2 py-1 rounded disabled:cursor-not-allowed"
                       title="从视频首帧生成封面"
                     >
                       <span>截取视频首帧</span>
@@ -431,9 +425,12 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
       .aigc-btn:disabled::before{filter:brightness(0.85)}
       .aigc-btn:disabled{cursor:not-allowed}
       @keyframes aigcFlow{0%{background-position:0% 0%}100%{background-position:200% 0%}}
-      .aigc-skeleton{width:100%;max-width:420px;background:linear-gradient(90deg,rgba(34,211,238,.25),rgba(239,68,68,.25),rgba(34,211,238,.25));background-size:200% 100%;animation:aigcFlow 2s linear infinite}
+      .aigc-skeleton{width:100%;max-width:420px;background:linear-gradient(90deg,rgba(35, 172, 193, 0.25),rgba(239,68,68,.25),rgba(35, 172, 193, 0.25));background-size:200% 100%;animation:aigcFlow 2s linear infinite}
       .aigc-spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.6);border-top-color:#22d3ee;border-right-color:#ef4444;border-radius:50%;animation:spin 1s linear infinite}
       @keyframes spin{to{transform:rotate(360deg)}}
+      .ai-solid-btn{position:absolute;overflow:hidden;border-radius:0.375rem;color:#fff;background:var(--color-primary);box-shadow:0 0 0 1px rgba(0,0,0,.1);transition:background-color .2s ease}
+      .ai-solid-btn:hover{background:var(--color-primary-hover)}
+      .ai-solid-btn:disabled{filter:brightness(0.75);cursor:not-allowed}
       `}</style>
       <VideoGenerateModal open={aiOpen} onClose={() => setAiOpen(false)} onSaved={onAiSaved} onStart={(p)=>{ setAiGenerating(true) }} onReset={()=> setAiGenerating(false)} />
     </div>
