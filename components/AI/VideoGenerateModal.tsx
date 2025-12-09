@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { VIDEO_RESOLUTIONS, VIDEO_RATIOS, VIDEO_FPS_OPTIONS, VIDEO_DURATIONS } from '../../constants/video'
+import { useVideoGenerationTasks } from '../../context/VideoGenerationTasksContext'
 import { useVideoGeneration } from '../../hooks/useVideoGeneration'
 import { toastError, toastSuccess } from '../../services/utils'
 import type { GenerateVideoParams } from '../../types/video'
@@ -16,6 +17,7 @@ export const VideoGenerateModal: React.FC<{
   onReset?: () => void
 }> = ({ open, onClose, onSaved, onStart, onReset }) => {
   const { create, refresh, error, videoUrl, taskId, reset } = useVideoGeneration()
+  const { addTask, updateTask, removeTask } = useVideoGenerationTasks()
   const [params, setParams] = useState<GenerateVideoParams>({ 
     prompt: '', 
     resolution: VIDEO_RESOLUTIONS[0].value, 
@@ -33,8 +35,12 @@ export const VideoGenerateModal: React.FC<{
       setCoverUrl(null)
       console.log('start → params:', params)
       if (onStart) onStart(params)
-      const { id } = await create(params)
-      console.log('start → created id:', id)
+      const created = await create(params)
+      const id = created?.id
+      if (id) {
+        addTask(id, { status: 'queued' })
+        console.log('start → created id:', id)
+      }
     } catch (e: any) {
       toastError(e?.message || '生成失败')
       console.error('start → error:', e)
@@ -47,10 +53,13 @@ export const VideoGenerateModal: React.FC<{
     setGenerating(true)
     try {
       const task = await refresh(taskId)
-      if (task.last_frame_url) {
+      if (task) {
+        updateTask(taskId, { status: task.status, videoUrl: task.video_url || undefined, coverUrl: task.last_frame_url })
+      }
+      if (task?.last_frame_url) {
         setCoverUrl(task.last_frame_url)
       }
-      if (task.status !== 'succeeded') {
+      if (task && task.status !== 'succeeded') {
         toastSuccess('任务仍在进行中，请稍后再试')
       }
     } catch (e: any) {
@@ -64,6 +73,7 @@ export const VideoGenerateModal: React.FC<{
     if (!videoUrl || !taskId) return
     // Just pass the info to parent, don't save to bucket yet
     onSaved({ taskId, videoUrl, coverUrl })
+    removeTask(taskId)
     toastSuccess('请完善视频信息')
     reset()
     setGenerating(false)

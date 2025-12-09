@@ -11,6 +11,7 @@ import {
   faPen,
   faUpload,
   faHeart as faHeartSolid,
+  faArrowsRotate,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React from 'react'
@@ -57,4 +58,8 @@ export const EditIcon = ({ className }: { className?: string }) => (
 
 export const UploadIcon = ({ className }: { className?: string }) => (
   <FontAwesomeIcon icon={faUpload} className={className} />
+)
+
+export const RefreshIcon = ({ className }: { className?: string }) => (
+  <FontAwesomeIcon icon={faArrowsRotate} className={className} />
 )
