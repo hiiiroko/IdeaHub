@@ -25,25 +25,29 @@ export const fetchRecentVideoGenerationTasks = async (
 }
 
 export const discardVideoGenerationTask = async (
-  identifier: { id?: number; externalTaskId?: string },
+  externalTaskId: string,
   userId: string
 ) => {
-  const { id, externalTaskId } = identifier
-  if (!id && !externalTaskId) {
-    throw new Error('缺少任务标识，无法丢弃任务')
+  if (!externalTaskId) {
+    throw new Error('缺少 externalTaskId，无法丢弃任务')
   }
 
-  let query = supabase
+  const { data, error } = await supabase
     .from('video_generation_tasks')
     .update({ is_discarded: true })
+    .eq('external_task_id', externalTaskId)
     .eq('user_id', userId)
+    .select('id, external_task_id, is_discarded')
+    .maybeSingle()
 
-  query = id ? query.eq('id', id) : query.eq('external_task_id', externalTaskId as string)
+  if (error) {
+    console.error('[discardVideoGenerationTask] supabase error:', error)
+    throw new Error(error.message || '丢弃任务失败')
+  }
 
-  const { data, error } = await query.select('id, is_discarded').maybeSingle()
-  if (error) throw error
   if (!data) {
     throw new Error('未找到对应的生成任务，无法丢弃')
   }
-}
 
+  return data
+}

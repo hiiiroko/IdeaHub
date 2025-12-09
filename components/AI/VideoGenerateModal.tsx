@@ -86,18 +86,24 @@ export const VideoGenerateModal: React.FC<{
   }
 
   const discardTask = async () => {
-    const identifier = { id: latestTask?.id, externalTaskId: latestTask?.external_task_id || taskId }
+    const externalId = latestTask?.external_task_id || taskId
     if (!currentUser) {
       toastError('请先登录后再操作')
       return
     }
-    if (!identifier.id && !identifier.externalTaskId) {
-      toastError('缺少任务标识，无法丢弃')
+    if (!externalId) {
+      toastError('缺少 externalTaskId，无法丢弃')
       return
     }
+    console.log('[discard] task from modal:', latestTask)
+    console.log('[discard] identifier:', {
+      id: latestTask?.id,
+      externalTaskId: externalId,
+      userId: currentUser.id,
+    })
     setDiscarding(true)
     try {
-      await discardVideoGenerationTask(identifier, currentUser.id)
+      await discardVideoGenerationTask(externalId, currentUser.id)
       if (latestTask?.id) {
         removeGenerationTask(latestTask.id)
       }

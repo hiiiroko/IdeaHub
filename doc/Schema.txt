@@ -38,6 +38,7 @@ CREATE TABLE public.video_generation_tasks (
   error_message text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_discarded boolean NOT NULL DEFAULT false,
   CONSTRAINT video_generation_tasks_pkey PRIMARY KEY (id),
   CONSTRAINT video_generation_tasks_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );

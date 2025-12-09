@@ -113,9 +113,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
       toastError('请先登录后再操作')
       return
     }
+    console.log('[discard] task from UI:', task)
+    console.log('[discard] identifier:', {
+      id: task.id,
+      externalTaskId: task.external_task_id,
+      userId: currentUser.id,
+    })
     setDiscardingTask(true)
     try {
-      await discardVideoGenerationTask({ id: task.id, externalTaskId: task.external_task_id }, currentUser.id)
+      await discardVideoGenerationTask(task.external_task_id, currentUser.id)
       removeGenerationTask(task.id)
       toastSuccess('任务已丢弃')
       setViewTask(null)
