@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { VideoGenerateModal } from '../components/AI/VideoGenerateModal';
 import { UploadIcon, PlayIcon } from '../components/Icons';
 import { useApp } from '../context/AppContext';
+import { useVideoGenerationTasks } from '../context/VideoGenerationTasksContext';
 import { useUploadVideo } from '../hooks/useUploadVideo';
 import { useVideoGeneration } from '../hooks/useVideoGeneration';
 import { toUiVideo } from '../services/adapters';
@@ -12,14 +13,19 @@ import { Video } from '../types';
 import { getVideoDuration, getImageAspectRatioFromUrl } from '../utils/media';
 import { notifySuccess } from '../utils/notify';
 
-export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+export const Create: React.FC<{
+  onComplete: () => void
+  pendingAiResult?: { taskId: string; videoUrl: string; coverUrl: string | null }
+  onPendingAiResultConsumed?: () => void
+}> = ({ onComplete, pendingAiResult, onPendingAiResultConsumed }) => {
   const { currentUser, addVideo, updateVideo } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   // 进度统一由 useUploadVideo 提供
-  
+
   const { publish } = useVideoGeneration();
   const { upload, progress, loading } = useUploadVideo();
+  const { removeTask } = useVideoGenerationTasks();
 
   const [form, setForm] = useState({
     title: '',
@@ -51,6 +57,26 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
   const [aiOpen, setAiOpen] = useState(false)
   const [aiTaskId, setAiTaskId] = useState('')
   const [aiGenerating, setAiGenerating] = useState(false)
+
+  const applyAiResult = (result: { taskId: string; videoUrl: string; coverUrl: string | null }) => {
+    setAiTaskId(result.taskId)
+    setAiGenerating(false)
+    setPreviews(prev => ({ ...prev, video: result.videoUrl, cover: result.coverUrl || '' }))
+    setFiles(prev => ({ ...prev, video: null, cover: null }))
+    setInvalid({ video: false, cover: false })
+    setPreviewLoadingVideo(true)
+    if (result.coverUrl) {
+      setPreviewLoadingCover(true)
+    } else {
+      setPreviewLoadingCover(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!pendingAiResult) return
+    applyAiResult(pendingAiResult)
+    onPendingAiResultConsumed?.()
+  }, [pendingAiResult, onPendingAiResultConsumed])
   
 
 
@@ -161,30 +187,8 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
   };
 
   const onAiSaved = async (result: { taskId: string, videoUrl: string, coverUrl: string | null }) => {
-    setAiTaskId(result.taskId)
-    setAiGenerating(false)
-    setPreviews(prev => ({ ...prev, video: result.videoUrl }))
-    setPreviewLoadingVideo(true)
-    
-    setFiles(prev => ({ ...prev, video: null })) // Clear manual video file
-    
-    if (result.coverUrl) {
-        setPreviews(prev => ({ ...prev, cover: result.coverUrl! }))
-        // We don't have a file for cover, but that's ok if we use AI flow
-        // But wait, if we use AI flow, do we need a cover file?
-        // If using `publish` action, backend handles cover?
-        // The `publish` action might use the last frame or generated cover.
-        // The user guide says: "coverPublicUrl" is returned.
-        // So we don't need to upload cover file for AI flow.
-        // But manual flow needs cover file.
-        // We should handle this in validation.
-        setFiles(prev => ({ ...prev, cover: null }))
-        setInvalid(prev => ({ ...prev, cover: false }))
-    }
-    
-    setPreviewLoadingCover(true) // Assuming cover is loading
-    // Actually if it's a URL, we can just let img onLoad handle it.
-    
+    applyAiResult(result)
+    removeTask(result.taskId)
   }
 
   return (

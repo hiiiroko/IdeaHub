@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
+
 import { useApp } from '../context/AppContext';
-import { HomeIcon, PlusSquareIcon, LayoutGridIcon, LogOutIcon } from './Icons';
+import { useVideoGenerationTasks } from '../context/VideoGenerationTasksContext';
+
 import { FakeAvatar } from './FakeAvatar';
+import { HomeIcon, PlusSquareIcon, LayoutGridIcon, LogOutIcon, RefreshIcon, EyeIcon } from './Icons';
 
 interface SidebarProps {
   currentPage: string;
@@ -11,6 +14,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onRequireAuth }) => {
   const { currentUser, logout, isAuthLoading, theme, toggleTheme } = useApp();
+  const { tasks, refreshTask, openPreview } = useVideoGenerationTasks();
 
   const navItems = [
     { id: 'discovery', label: '创意', icon: HomeIcon },
@@ -136,6 +140,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
           );
         })}
       </nav>
+
+      {tasks.length > 0 && (
+        <div className="px-4 pb-3 space-y-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400">正在生成的视频</p>
+          <div className="flex flex-wrap gap-2">
+            {tasks.map(task => {
+              const ready = task.status === 'succeeded' && !!task.videoUrl
+              return (
+                <div
+                  key={task.taskId}
+                  className="flex items-center gap-2 px-3 py-2 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200 border border-blue-100 dark:border-blue-800"
+                >
+                  <span className="text-xs font-mono">#{task.taskId.slice(-5)}</span>
+                  <button
+                    type="button"
+                    className="w-6 h-6 inline-flex items-center justify-center rounded-full bg-white/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-200 hover:bg-white dark:hover:bg-blue-900 transition"
+                    onClick={() => ready ? openPreview(task.taskId) : refreshTask(task.taskId)}
+                    title={ready ? '查看生成视频' : '刷新状态'}
+                  >
+                    {ready ? <EyeIcon className="w-3.5 h-3.5" /> : <RefreshIcon className={`w-3.5 h-3.5 ${task.loading ? 'animate-spin' : ''}`} />}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {isAuthLoading ? (
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
