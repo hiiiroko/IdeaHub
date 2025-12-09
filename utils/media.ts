@@ -74,3 +74,18 @@ export const captureFirstFrame = async (url: string): Promise<Blob> => {
     video.onerror = () => reject(new Error('Video load error'))
   })
 }
+
+/**
+ * Get the aspect ratio (width/height) of an image by URL
+ */
+export const getImageAspectRatioFromUrl = (url: string): Promise<number> => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const ratio = img.naturalWidth / img.naturalHeight
+      resolve(ratio || 1.77)
+    }
+    img.onerror = () => resolve(1.77)
+    img.src = url
+  })
+}

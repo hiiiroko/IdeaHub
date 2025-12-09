@@ -146,6 +146,14 @@ export const updateVideo = async (
   if (error) throw error
 }
 
+export const updateVideoAspectRatio = async (id: string, aspectRatio: number) => {
+  const { error } = await supabase
+    .from('videos')
+    .update({ aspect_ratio: aspectRatio })
+    .eq('id', id)
+  if (error) throw error
+}
+
 export const deleteVideo = async (id: string) => {
   // Soft delete
   const { error } = await supabase

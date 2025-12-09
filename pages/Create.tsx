@@ -7,9 +7,9 @@ import { useUploadVideo } from '../hooks/useUploadVideo';
 import { useVideoGeneration } from '../hooks/useVideoGeneration';
 import { toUiVideo } from '../services/adapters';
 import { parseTags, toastError } from '../services/utils';
-import { uploadVideo, fetchVideoById } from '../services/video';
+import { uploadVideo, fetchVideoById, updateVideoAspectRatio } from '../services/video';
 import { Video } from '../types';
-import { getVideoDuration } from '../utils/media';
+import { getVideoDuration, getImageAspectRatioFromUrl } from '../utils/media';
 import { notifySuccess } from '../utils/notify';
 
 export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
@@ -107,10 +107,12 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
       const meta = { title: form.title, description: form.description, tags: parseTags(form.tags) }
       
       let dbVideo;
+      let publishResult: any = null
       
       if (isAi) {
           // Use publish action for AI video
           const result = await publish(aiTaskId, meta)
+          publishResult = result
           dbVideo = result.video // Assuming result contains the video record or we need to fetch it?
           // The user guide says: returns { taskId, video: Video, ... }
           // So result.video should be the DbVideo
@@ -137,6 +139,14 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
         if (full) {
           const hydrated = toUiVideo(full)
           updateVideo(dbVideo.id, { ...hydrated, isHydrated: true })
+        }
+        const coverUrl = publishResult?.coverPublicUrl || uiVideo.coverUrl
+        if (coverUrl) {
+          try {
+            const ratio = await getImageAspectRatioFromUrl(coverUrl)
+            await updateVideoAspectRatio(dbVideo.id, ratio)
+            updateVideo(dbVideo.id, { aspectRatio: ratio })
+          } catch {}
         }
       }
       succeeded = true;
