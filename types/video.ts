@@ -14,6 +14,7 @@ export interface VideoGenerationTask {
   user_id: string
   external_task_id: string
   status: 'queued' | 'running' | 'succeeded' | 'failed' | 'uploaded'
+  is_discarded: boolean
   prompt: string
   resolution: string
   ratio: string

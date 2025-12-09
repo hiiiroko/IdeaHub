@@ -6,6 +6,8 @@ import { useTheme } from '../hooks/useTheme';
 import { toUiVideo } from '../services/adapters';
 import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos, fetchComments, fetchLikeStats, fetchLikeCountsForVideos, fetchViewCountsForVideos } from '../services/interaction';
 import { fetchVideos } from '../services/video';
+import { fetchRecentVideoGenerationTasks } from '../services/videoGeneration';
+import type { VideoGenerationTask } from '../types/video';
 import { User, Video, Comment, SortOption } from '../types.ts';
 
 /**
@@ -25,6 +27,7 @@ interface AppState {
   isLoading: boolean;
   isAuthLoading: boolean;
   theme: 'light' | 'dark';
+  generationTasks: VideoGenerationTask[];
 }
 
 interface AppContextType extends AppState {
@@ -41,6 +44,9 @@ interface AppContextType extends AppState {
   refreshVideos: () => Promise<void>;
   toggleTheme: () => void;
   setTheme: (next: 'light' | 'dark') => void;
+  setGenerationTasks: (tasks: VideoGenerationTask[]) => void;
+  updateGenerationTask: (id: number, patch: Partial<VideoGenerationTask>) => void;
+  removeGenerationTask: (id: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -57,9 +63,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     register: performRegister, 
     logout: performLogout 
   } = useAuth();
-  
+
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [generationTasks, setGenerationTasks] = useState<VideoGenerationTask[]>([]);
 
   /**
    * 刷新视频列表并补全点赞状态
@@ -102,6 +109,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  const replaceGenerationTasks = useCallback((tasks: VideoGenerationTask[]) => {
+    setGenerationTasks(tasks);
+  }, []);
+
+  const updateGenerationTask = useCallback((id: number, patch: Partial<VideoGenerationTask>) => {
+    setGenerationTasks(prev => prev.map(task => (task.id === id ? { ...task, ...patch } : task)));
+  }, []);
+
+  const removeGenerationTask = useCallback((id: number) => {
+    setGenerationTasks(prev => prev.filter(task => task.id !== id));
+  }, []);
+
+  const loadRecentGenerationTasks = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const tasks = await fetchRecentVideoGenerationTasks(currentUser.id);
+      replaceGenerationTasks(tasks);
+    } catch (e) {
+      console.error('Failed to load recent AI generation tasks', e);
+    }
+  }, [currentUser, replaceGenerationTasks]);
+
   // Sync auth loading state
   // useAuth manages its own loading, but AppContext exposed isAuthLoading
   // We initialize it to true in useAuth, so it matches.
@@ -127,6 +156,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     void init();
   }, [fetchCurrentUser, setIsAuthLoading, refreshVideos]);
 
+  useEffect(() => {
+    if (currentUser) {
+      void loadRecentGenerationTasks();
+    } else {
+      replaceGenerationTasks([]);
+    }
+  }, [currentUser, loadRecentGenerationTasks, replaceGenerationTasks]);
+
   /**
    * 登录后刷新当前用户与点赞状态
    * Legacy login method exposed to context, essentially refreshes user data
@@ -139,7 +176,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = useCallback(async () => {
     await performLogout();
     setVideos(prev => prev.map(v => ({ ...v, isLiked: false })));
-  }, [performLogout]);
+    replaceGenerationTasks([]);
+  }, [performLogout, replaceGenerationTasks]);
 
 
   // 在列表头部插入新视频（前置添加，便于用户立即看到）
@@ -234,7 +272,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const authLogin = useCallback(async (email: string, password: string) => {
     await performLogin(email, password);
     await refreshVideos();
-  }, [performLogin, refreshVideos]);
+    await loadRecentGenerationTasks();
+  }, [performLogin, refreshVideos, loadRecentGenerationTasks]);
 
   /**
    * 账号注册
@@ -248,6 +287,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     videos,
     isLoading,
     isAuthLoading: authLoading,
+    generationTasks,
     theme,
     login,
     logout,
@@ -261,12 +301,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     authRegister,
     refreshVideos,
     toggleTheme,
-    setTheme
+    setTheme,
+    setGenerationTasks: replaceGenerationTasks,
+    updateGenerationTask,
+    removeGenerationTask
   }), [
     currentUser,
     videos,
     isLoading,
     authLoading,
+    generationTasks,
     theme,
     login,
     logout,
@@ -280,7 +324,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     authRegister,
     refreshVideos,
     toggleTheme,
-    setTheme
+    setTheme,
+    replaceGenerationTasks,
+    updateGenerationTask,
+    removeGenerationTask
   ]);
 
   return (

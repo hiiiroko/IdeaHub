@@ -114,7 +114,7 @@ export const useVideoGeneration = () => {
   )
 
   const refresh = useCallback(
-    async (taskIdArg?: string) => {
+    async (taskIdArg?: string): Promise<VideoGenerationTask | null> => {
       setError(null)
       setLastError(null)
       const effectiveId = taskIdArg || taskId
@@ -152,7 +152,7 @@ export const useVideoGeneration = () => {
           return null
         }
 
-        const task = data as VideoGenerationTask
+        const task = { ...(data as VideoGenerationTask), is_discarded: (data as any)?.is_discarded ?? false }
         if (task.status === 'succeeded' && task.video_url) {
           setVideoUrl(task.video_url)
           setStatus('ready')

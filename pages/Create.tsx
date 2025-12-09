@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { VideoGenerateModal } from '../components/AI/VideoGenerateModal';
 import { UploadIcon, PlayIcon } from '../components/Icons';
@@ -12,7 +12,9 @@ import { Video } from '../types';
 import { getVideoDuration, getImageAspectRatioFromUrl } from '../utils/media';
 import { notifySuccess } from '../utils/notify';
 
-export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+type AiPrefill = { taskId: string; videoUrl: string; coverUrl: string | null }
+
+export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | null; onAiPrefillConsumed?: () => void }> = ({ onComplete, aiPrefill, onAiPrefillConsumed }) => {
   const { currentUser, addVideo, updateVideo } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -51,6 +53,24 @@ export const Create: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
   const [aiOpen, setAiOpen] = useState(false)
   const [aiTaskId, setAiTaskId] = useState('')
   const [aiGenerating, setAiGenerating] = useState(false)
+
+  useEffect(() => {
+    if (aiPrefill?.taskId && aiPrefill.videoUrl) {
+      setAiTaskId(aiPrefill.taskId)
+      setAiGenerating(false)
+      setPreviews(prev => ({
+        ...prev,
+        video: aiPrefill.videoUrl,
+        cover: aiPrefill.coverUrl ?? prev.cover,
+      }))
+      setPreviewLoadingVideo(true)
+      if (aiPrefill?.coverUrl) {
+        setPreviewLoadingCover(true)
+      }
+      setFiles(prev => ({ ...prev, video: null }))
+      onAiPrefillConsumed?.()
+    }
+  }, [aiPrefill, onAiPrefillConsumed])
   
 
 

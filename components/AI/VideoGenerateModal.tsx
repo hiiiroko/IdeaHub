@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 
 import { VIDEO_RESOLUTIONS, VIDEO_RATIOS, VIDEO_FPS_OPTIONS, VIDEO_DURATIONS } from '../../constants/video'
+import { useApp } from '../../context/AppContext'
 import { useVideoGeneration } from '../../hooks/useVideoGeneration'
 import { toastError, toastSuccess } from '../../services/utils'
-import type { GenerateVideoParams } from '../../types/video'
+import { discardVideoGenerationTask } from '../../services/videoGeneration'
+import type { GenerateVideoParams, VideoGenerationTask } from '../../types/video'
 
 import { VideoGenerateForm } from './VideoGenerateForm'
 import { VideoGenerateResult } from './VideoGenerateResult'
@@ -15,22 +17,26 @@ export const VideoGenerateModal: React.FC<{
   onStart?: (params: GenerateVideoParams) => void
   onReset?: () => void
 }> = ({ open, onClose, onSaved, onStart, onReset }) => {
+  const { currentUser, removeGenerationTask } = useApp()
   const { create, refresh, error, videoUrl, taskId, reset } = useVideoGeneration()
-  const [params, setParams] = useState<GenerateVideoParams>({ 
-    prompt: '', 
-    resolution: VIDEO_RESOLUTIONS[0].value, 
-    ratio: VIDEO_RATIOS[0].value, 
-    duration: VIDEO_DURATIONS.DEFAULT as 3|4|5, 
+  const [params, setParams] = useState<GenerateVideoParams>({
+    prompt: '',
+    resolution: VIDEO_RESOLUTIONS[0].value,
+    ratio: VIDEO_RATIOS[0].value,
+    duration: VIDEO_DURATIONS.DEFAULT as 3|4|5,
     fps: VIDEO_FPS_OPTIONS[0].value as 16|24
   })
   const [generating, setGenerating] = useState(false)
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [latestTask, setLatestTask] = useState<VideoGenerationTask | null>(null)
+  const [discarding, setDiscarding] = useState(false)
 
   const start = async () => {
     if (!params.prompt.trim()) { toastError('请输入提示词'); return }
     try {
       setGenerating(true)
       setCoverUrl(null)
+      setLatestTask(null)
       console.log('start → params:', params)
       if (onStart) onStart(params)
       const { id } = await create(params)
@@ -47,6 +53,11 @@ export const VideoGenerateModal: React.FC<{
     setGenerating(true)
     try {
       const task = await refresh(taskId)
+      if (!task) {
+        toastError('未获取到任务信息')
+        return
+      }
+      setLatestTask(task)
       if (task.last_frame_url) {
         setCoverUrl(task.last_frame_url)
       }
@@ -70,10 +81,42 @@ export const VideoGenerateModal: React.FC<{
     onClose()
   }
 
+  const discardTask = async () => {
+    const identifier = { id: latestTask?.id, externalTaskId: latestTask?.external_task_id || taskId }
+    if (!currentUser) {
+      toastError('请先登录后再操作')
+      return
+    }
+    if (!identifier.id && !identifier.externalTaskId) {
+      toastError('缺少任务标识，无法丢弃')
+      return
+    }
+    setDiscarding(true)
+    try {
+      await discardVideoGenerationTask(identifier, currentUser.id)
+      if (latestTask?.id) {
+        removeGenerationTask(latestTask.id)
+      }
+      toastSuccess('任务已丢弃')
+      reset()
+      setGenerating(false)
+      setCoverUrl(null)
+      setLatestTask(null)
+      onClose()
+    } catch (e: any) {
+      console.error(e)
+      toastError(e?.message || '丢弃任务失败')
+    } finally {
+      setDiscarding(false)
+    }
+  }
+
   useEffect(() => {
     if (!open) {
       reset()
       setGenerating(false)
+      setLatestTask(null)
+      setDiscarding(false)
       if (onReset) onReset()
     }
   }, [open, reset, onReset])
@@ -132,6 +175,8 @@ export const VideoGenerateModal: React.FC<{
               saving={false}
               onClose={onClose}
               onSave={save}
+              onDiscard={discardTask}
+              discarding={discarding}
             />
           )}
           {error && <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded">{error}</div>}
