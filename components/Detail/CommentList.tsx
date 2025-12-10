@@ -58,7 +58,24 @@ export const CommentList: React.FC<CommentListProps> = ({ comments, loading = fa
         <div className="flex items-center gap-2 mb-1">
           <p className="text-xs font-bold text-gray-900 dark:text-gray-100">{comment.user?.username || '用户'}</p>
         </div>
-        <p className="m-0 text-sm leading-snug text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words text-pretty">{comment.content}</p>
+        {(() => {
+          const c = comment.content || ''
+          const hasPrefix = c.startsWith('回复 @') && c.includes('：')
+          if (!hasPrefix) {
+            return (
+              <p className="m-0 text-sm leading-snug text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words text-pretty">{c}</p>
+            )
+          }
+          const idx = c.indexOf('：')
+          const prefix = c.slice(0, idx + 1)
+          const rest = c.slice(idx + 1)
+          return (
+            <p className="m-0 text-sm leading-snug text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words text-pretty">
+              <span className="text-gray-400 dark:text-gray-500">{prefix}</span>
+              <span>{rest}</span>
+            </p>
+          )
+        })()}
         <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
           <span>{formatCommentTime(comment.createdAt)}</span>
           <button
