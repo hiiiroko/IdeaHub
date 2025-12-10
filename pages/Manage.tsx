@@ -63,22 +63,7 @@ export const Manage: React.FC = () => {
 
   return (
     <>
-    <div className="p-8 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">我的视频</h1>
-            <div className="flex items-center">
-              <button
-                type="button"
-                className="mr-3 px-3 py-1 rounded-full text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
-                onClick={() => setChartsPreviewOpen(true)}
-              >
-                查看视图
-              </button>
-              <span className="bg-blue-50 dark:bg-blue-900/20 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                {filteredMyVideos.length} 条结果
-              </span>
-            </div>
-        </div>
+    <div className="p-6 max-w-7xl mx-auto">
         <FiltersBar
           timeRange={timeRange}
           sort={sort}
@@ -86,6 +71,19 @@ export const Manage: React.FC = () => {
           onSortChange={setSort}
           onSearchChange={setSearch}
         />
+
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            type="button"
+            className="px-3 py-1 rounded-full text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
+            onClick={() => setChartsPreviewOpen(true)}
+          >
+            查看视图
+          </button>
+          <span className="bg-blue-50 dark:bg-blue-900/20 text-primary px-3 py-1 rounded-full text-sm font-medium">
+            {filteredMyVideos.length} 条结果
+          </span>
+        </div>
 
         <VideoTable
           videos={filteredMyVideos}

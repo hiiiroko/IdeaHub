@@ -12,9 +12,10 @@ type Props = {
   onSortChange: (next: SortOption) => void
   onSearchChange: (debounced: string) => void
   defaultSearch?: string
+  showDivider?: boolean
 }
 
-export const FiltersBar: React.FC<Props> = ({ timeRange, sort, onTimeRangeChange, onSortChange, onSearchChange, defaultSearch }) => {
+export const FiltersBar: React.FC<Props> = ({ timeRange, sort, onTimeRangeChange, onSortChange, onSearchChange, defaultSearch, showDivider = true }) => {
   const [searchInput, setSearchInput] = useState(defaultSearch || '')
   useEffect(() => {
     const t = setTimeout(() => {
@@ -39,7 +40,7 @@ export const FiltersBar: React.FC<Props> = ({ timeRange, sort, onTimeRangeChange
   
 
   return (
-    <div className="sticky top-0 z-30 bg-bg/95 dark:bg-gray-900/95 backdrop-blur-sm py-4 mb-6 -mx-6 px-6 border-b border-gray-200/50 dark:border-gray-700 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between gap-4 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
+    <div className={`sticky top-0 z-30 bg-bg/95 dark:bg-gray-900/95 backdrop-blur-sm py-4 mb-6 -mx-6 px-6 ${showDivider ? 'border-b border-gray-200/50 dark:border-gray-700' : ''} space-y-4 md:space-y-0 md:flex md:items-center md:justify-between gap-4 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]`}>
       <div className="relative w-full md:w-96">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
