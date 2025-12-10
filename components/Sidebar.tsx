@@ -218,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
       </nav>
 
       {currentUser && (
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-4">
           <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 shadow-sm transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 视频生成任务</h3>
@@ -311,7 +311,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
               <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse"></div>
             </div>
           </div>
-          <div className="h-8 bg-gray-100 dark:bg-gray-700 rounded-md animate-pulse"></div>
+          <div className="h-9 bg-gray-100 dark:bg-gray-700 rounded-md animate-pulse"></div>
         </div>
       ) : currentUser ? (
         <div className="p-4 border-t border-gray-100 dark:border-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
