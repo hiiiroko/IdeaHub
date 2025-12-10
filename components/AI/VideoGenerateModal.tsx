@@ -46,6 +46,8 @@ export const VideoGenerateModal: React.FC<{
         const tasks = await fetchRecentVideoGenerationTasks(currentUser.id)
         setGenerationTasks(tasks)
       }
+      toastSuccess('任务已创建，请在侧边栏查看进度')
+      onClose()
     } catch (e: any) {
       toastError(e?.message || '生成失败')
       console.error('start → error:', e)
@@ -160,30 +162,7 @@ export const VideoGenerateModal: React.FC<{
             <div className="min-h-24 flex items-center justify-center flex-col gap-4 p-8">
               <div className="text-lg font-medium text-gray-900 dark:text-gray-100">正在处理...</div>
               <div className="text-sm text-gray-600 dark:text-gray-300">任务创建或查询中，请稍候</div>
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          )}
-
-          {!generating && !videoUrl && taskId && (
-            <div className="min-h-24 flex flex-col gap-3 p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
-              <div className="text-base font-medium text-gray-900 dark:text-gray-100">任务已创建</div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">任务 ID：{taskId}。生成可能需要数分钟，点击下方按钮刷新状态，或稍后在管理页查看。</p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors"
-                  onClick={refreshStatus}
-                >
-                  刷新状态
-                </button>
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  onClick={onClose}
-                >
-                  关闭
-                </button>
-              </div>
+              <div className="h-8 w-8 rounded-full border-2 border-primary/70 border-t-transparent animate-spin"></div>
             </div>
           )}
 

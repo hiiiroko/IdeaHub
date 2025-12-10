@@ -119,7 +119,6 @@ export const useVideoGeneration = () => {
 
         setTaskId(id)
         setStatus('polling')
-        toastSuccess('生成任务已创建')
         return { id }
       } catch (e: any) {
         normalizeCatchError('[useVideoGeneration] start', e, '生成任务创建失败，请稍后重试')
