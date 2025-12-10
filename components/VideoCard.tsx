@@ -60,14 +60,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
           onError={() => setCoverLoaded(true)}
         />
         
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(600px at ${lightPos.x}px ${lightPos.y}px, rgba(255,255,255,0.25), transparent 60%)`,
-            opacity: 1,
-            transition: 'background 150ms ease'
-          }}
-        />
+        
 
         {/* 时长标记 */}
         <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-xs px-2 py-0.5 rounded-md">
