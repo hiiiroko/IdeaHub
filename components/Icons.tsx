@@ -13,6 +13,7 @@ import {
   faHeart as faHeartSolid,
   faArrowsRotate,
   faComment,
+  faFire,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React from 'react'
@@ -67,4 +68,8 @@ export const RefreshIcon = ({ className }: { className?: string }) => (
 
 export const CommentIcon = ({ className }: { className?: string }) => (
   <FontAwesomeIcon icon={faComment} className={className} />
+)
+
+export const FireIcon = ({ className }: { className?: string }) => (
+  <FontAwesomeIcon icon={faFire} className={className} />
 )

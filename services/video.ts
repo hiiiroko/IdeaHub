@@ -59,6 +59,20 @@ export const fetchMyVideosWithStats = async (userId: string): Promise<import('..
   return data as import('../types/index.ts').VideoWithEngagementStats[]
 }
 
+export const fetchVideoEngagementStats = async (videoId: string): Promise<import('../types/index.ts').VideoWithEngagementStats | null> => {
+  const { data, error } = await supabase
+    .from('video_with_engagement_stats')
+    .select('*')
+    .eq('video_id', videoId)
+    .maybeSingle()
+  
+  if (error) {
+    console.error('Error fetching video stats:', error)
+    return null
+  }
+  return data as import('../types/index.ts').VideoWithEngagementStats
+}
+
 export const uploadVideo = async (
   file: File,
   cover: File,

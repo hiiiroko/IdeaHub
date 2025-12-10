@@ -27,6 +27,7 @@ export interface Video {
   like_count?: number // Computed/fetched separately
   is_liked?: boolean // Computed/fetched separately
   comment_count?: number // Computed/fetched separately
+  hot_score?: number // Added for engagement stats
 }
 
 export interface VideoWithEngagementStats {
@@ -47,6 +48,7 @@ export interface VideoWithEngagementStats {
   top_level_comments: number
   total_likes: number
   total_views: number
+  hot_score: number
 }
 
 export interface Comment {

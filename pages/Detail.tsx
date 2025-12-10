@@ -6,8 +6,20 @@ import { DetailSkeleton } from '../components/Detail/DetailSkeleton';
 import { VideoInfo } from '../components/Detail/VideoInfo';
 import { VideoPlayer } from '../components/Detail/VideoPlayer';
 import { useApp } from '../context/AppContext';
-import { fetchComments } from '../services/interaction';
-import type { Comment } from '../types';
+import { fetchComments, sendComment as postComment } from '../services/interaction';
+import { fetchVideoEngagementStats } from '../services/video';
+import { Comment, Video } from '../types';
+
+const formatTime = (iso: string) => {
+  if (!iso) return ''
+  return new Date(iso).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric'
+  })
+}
 
 interface DetailProps {
   videoId: string;
@@ -43,8 +55,20 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
     if (video && !hasIncremented.current) {
       hasIncremented.current = true;
       incrementView(video.id);
+
+      // Fetch fresh stats including hot_score
+      fetchVideoEngagementStats(video.id).then((stats) => {
+        if (stats) {
+          updateVideo(video.id, {
+            viewCount: stats.total_views,
+            likeCount: stats.total_likes,
+            commentCount: stats.total_comments,
+            hot_score: stats.hot_score,
+          });
+        }
+      });
     }
-  }, [videoId, video, incrementView]);
+  }, [videoId, video, incrementView, updateVideo]);
 
   useEffect(() => {
       const loadComments = async () => {
@@ -97,56 +121,58 @@ export const Detail: React.FC<DetailProps> = ({ videoId, onClose, onRequireAuth 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto">
-       <div className="relative w-full max-w-6xl h-full md:h-[90vh] bg-white dark:bg-gray-800 md:rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl">
-         
-         {/* 关闭按钮 */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto p-4">
+       <div className="relative w-full max-w-6xl flex md:flex-row flex-col">
+         <div className="relative w-full h-full md:h-[90vh] bg-white dark:bg-gray-800 md:rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl">
+           <VideoPlayer videoUrl={video.videoUrl} coverUrl={video.coverUrl} />
+
+           {/* 右：交互 */}
+           <div className="w-full md:w-1/3 flex flex-col bg-white dark:bg-gray-800 h-full">
+              {isLoading ? (
+                <div className="p-6">
+                  <DetailSkeleton />
+                </div>
+              ) : (
+                <VideoInfo 
+                  video={video} 
+                  currentUser={currentUser} 
+                  onRequireAuth={onRequireAuth} 
+                  toggleLike={toggleLike} 
+                />
+              )}
+
+              <CommentList
+                comments={video.comments || []}
+                loading={commentsLoading}
+                onReply={(comment) => {
+                  if (!currentUser) {
+                    onRequireAuth && onRequireAuth();
+                    return;
+                  }
+                  setReplyTo(comment);
+                }}
+              />
+
+              <CommentInput
+                commentText={commentText}
+                setCommentText={setCommentText}
+                commentSending={commentSending}
+                onSubmit={handleComment}
+                currentUser={currentUser}
+                replyToUsername={replyTo?.user?.username || null}
+                onCancelReply={() => setReplyTo(null)}
+              />
+           </div>
+         </div>
+
+         {/* 关闭按钮：桌面端在右侧外，移动端在右上方外 */}
          <button 
             onClick={onClose}
-            className="absolute top-4 left-4 md:left-auto md:right-4 z-10 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
+            className="absolute md:static top-0 right-0 md:ml-4 mb-4 md:mb-0 z-[60] w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors flex-shrink-0 translate-y-[-120%] md:translate-y-0"
+            aria-label="关闭"
          >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
          </button>
-
-         <VideoPlayer videoUrl={video.videoUrl} coverUrl={video.coverUrl} />
-
-         {/* 右：交互 */}
-         <div className="w-full md:w-1/3 flex flex-col bg-white dark:bg-gray-800 h-full">
-            {isLoading ? (
-              <div className="p-6">
-                <DetailSkeleton />
-              </div>
-            ) : (
-              <VideoInfo 
-                video={video} 
-                currentUser={currentUser} 
-                onRequireAuth={onRequireAuth} 
-                toggleLike={toggleLike} 
-              />
-            )}
-
-            <CommentList
-              comments={video.comments || []}
-              loading={commentsLoading}
-              onReply={(comment) => {
-                if (!currentUser) {
-                  onRequireAuth && onRequireAuth();
-                  return;
-                }
-                setReplyTo(comment);
-              }}
-            />
-
-            <CommentInput
-              commentText={commentText}
-              setCommentText={setCommentText}
-              commentSending={commentSending}
-              onSubmit={handleComment}
-              currentUser={currentUser}
-              replyToUsername={replyTo?.user?.username || null}
-              onCancelReply={() => setReplyTo(null)}
-            />
-         </div>
        </div>
     </div>
   );
