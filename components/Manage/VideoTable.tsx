@@ -1,3 +1,7 @@
+
++5
+-5
+
 import React from 'react'
 
 import { Video } from '../../types'
@@ -19,7 +23,7 @@ export const VideoTable: React.FC<VideoTableProps> = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
       <div className="overflow-x-auto">
-        <table className="min-w-full transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
+        <table className="min-w-full">
           <thead className="bg-gray-50 dark:bg-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">视频</th>
@@ -28,9 +32,12 @@ export const VideoTable: React.FC<VideoTableProps> = ({
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
+          <tbody className="bg-white dark:bg-gray-800 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
             {videos.map((video) => (
-              <tr key={video.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
+              <tr
+                key={video.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <button
