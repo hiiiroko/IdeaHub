@@ -47,6 +47,18 @@ export const fetchVideos = async (
   return data as unknown as DbVideo[]
 }
 
+export const fetchMyVideosWithStats = async (userId: string): Promise<import('../types/index.ts').VideoWithEngagementStats[]> => {
+  const { data, error } = await supabase
+    .from('video_with_engagement_stats')
+    .select('*')
+    .eq('uploader_id', userId)
+    .eq('is_deleted', false)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data as import('../types/index.ts').VideoWithEngagementStats[]
+}
+
 export const uploadVideo = async (
   file: File,
   cover: File,

@@ -77,3 +77,51 @@ CREATE TABLE public.videos (
   CONSTRAINT videos_pkey PRIMARY KEY (id),
   CONSTRAINT videos_uploader_id_fkey FOREIGN KEY (uploader_id) REFERENCES public.profiles(id)
 );
+
+-- ==========================================
+-- Views — 管理后台 / 统计相关只读视图
+-- ==========================================
+
+CREATE VIEW public.video_with_engagement_stats
+WITH (security_invoker = true) AS
+SELECT
+  v.id            AS video_id,
+  v.uploader_id,
+  v.title,
+  v.description,
+  v.tags,
+  v.video_path,
+  v.cover_path,
+  v.duration,
+  v.aspect_ratio,
+  v.is_public,
+  v.is_deleted,
+  v.created_at,
+  v.updated_at,
+  COALESCE(c.total_comments, 0)::bigint       AS total_comments,
+  COALESCE(c.top_level_comments, 0)::bigint   AS top_level_comments,
+  COALESCE(l.total_likes, 0)::bigint          AS total_likes,
+  COALESCE(w.total_views, 0)::bigint          AS total_views
+FROM public.videos v
+LEFT JOIN (
+  SELECT
+    video_id,
+    COUNT(*) AS total_comments,
+    COUNT(*) FILTER (WHERE parent_comment_id IS NULL) AS top_level_comments
+  FROM public.comments
+  GROUP BY video_id
+) c ON c.video_id = v.id
+LEFT JOIN (
+  SELECT
+    video_id,
+    COUNT(*) AS total_likes
+  FROM public.video_likes
+  GROUP BY video_id
+) l ON l.video_id = v.id
+LEFT JOIN (
+  SELECT
+    video_id,
+    COUNT(*) AS total_views
+  FROM public.video_view_events
+  GROUP BY video_id
+) w ON w.video_id = v.id;

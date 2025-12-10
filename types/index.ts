@@ -29,6 +29,26 @@ export interface Video {
   comment_count?: number // Computed/fetched separately
 }
 
+export interface VideoWithEngagementStats {
+  video_id: string
+  uploader_id: string
+  title: string
+  description: string | null
+  tags: string[] | null
+  video_path: string
+  cover_path: string
+  duration: number
+  aspect_ratio: number
+  is_public: boolean
+  is_deleted: boolean
+  created_at: string
+  updated_at: string
+  total_comments: number
+  top_level_comments: number
+  total_likes: number
+  total_views: number
+}
+
 export interface Comment {
   id: string
   video_id: string

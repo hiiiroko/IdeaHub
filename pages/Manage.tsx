@@ -1,18 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 import { ConfirmModal } from '../components/ConfirmModal';
 import { EditVideoModal } from '../components/EditVideoModal';
 import { FiltersBar } from '../components/FiltersBar';
 import { useApp } from '../context/AppContext';
-import { toastSuccess } from '../services/utils';
-import { deleteVideo as deleteVideoSvc } from '../services/video';
+import { toastSuccess, toastError } from '../services/utils';
+import { deleteVideo as deleteVideoSvc, fetchMyVideosWithStats } from '../services/video';
 import { SortOption, TimeRange } from '../types';
+import type { VideoWithEngagementStats } from '../types/index';
 
 import DashboardCharts from '@/components/DashboardCharts';
 import { VideoTable } from '@/components/Manage/VideoTable';
 
 export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVideoClick }) => {
-  const { currentUser, videos, deleteVideo } = useApp();
+  const { currentUser, deleteVideo: deleteGlobalVideo } = useApp();
+  const [myVideos, setMyVideos] = useState<VideoWithEngagementStats[]>([]);
+  const [loading, setLoading] = useState(false);
+  
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingEditId, setPendingEditId] = useState<string | null>(null);
   const [search, setSearch] = useState('')
@@ -22,36 +26,60 @@ export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVi
   const [previewUrl, setPreviewUrl] = useState('')
   const [chartsPreviewOpen, setChartsPreviewOpen] = useState(false)
 
-  const myVideos = videos.filter(v => v.uploaderId === currentUser?.id);
+  const fetchVideos = async () => {
+    if (!currentUser) return;
+    setLoading(true);
+    try {
+      const data = await fetchMyVideosWithStats(currentUser.id);
+      setMyVideos(data);
+    } catch (e: any) {
+      console.error(e);
+      toastError('获取视频列表失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVideos();
+  }, [currentUser]);
+
   const filteredMyVideos = useMemo(() => {
     let result = [...myVideos]
     if (search.trim()) {
       const q = search.toLowerCase()
-      result = result.filter(v => v.title.toLowerCase().includes(q) || v.tags.some(t => t.toLowerCase().includes(q)))
+      result = result.filter(v => v.title.toLowerCase().includes(q) || (v.tags || []).some(t => t.toLowerCase().includes(q)))
     }
     const now = new Date()
     if (timeRange === TimeRange.TODAY) {
       result = result.filter(v => {
-        const d = new Date(v.createdAt)
+        const d = new Date(v.created_at)
         return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
       })
     } else if (timeRange === TimeRange.WEEK) {
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
       result = result.filter(v => {
-        const d = new Date(v.createdAt)
+        const d = new Date(v.created_at)
         return d >= sevenDaysAgo && d <= now
       })
     } else if (timeRange === TimeRange.MONTH) {
       result = result.filter(v => {
-        const d = new Date(v.createdAt)
+        const d = new Date(v.created_at)
         return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
       })
     }
     result.sort((a, b) => {
-      if (sort === SortOption.MOST_LIKED) return b.likeCount - a.likeCount
-      if (sort === SortOption.MOST_VIEWED) return b.viewCount - a.viewCount
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      if (sort === SortOption.MOST_LIKED) return b.total_likes - a.total_likes
+      if (sort === SortOption.MOST_VIEWED) return b.total_views - a.total_views
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
+    // Fix sorting direction for numbers
+    if (sort === SortOption.MOST_LIKED) {
+       result.sort((a, b) => b.total_likes - a.total_likes)
+    } else if (sort === SortOption.MOST_VIEWED) {
+       result.sort((a, b) => b.total_views - a.total_views)
+    }
+
     return result
   }, [myVideos, search, timeRange, sort])
 
@@ -70,6 +98,7 @@ export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVi
           onTimeRangeChange={setTimeRange}
           onSortChange={setSort}
           onSearchChange={setSearch}
+          showDivider={false}
         />
 
         <div className="flex items-center gap-3 mb-6">
@@ -85,20 +114,24 @@ export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVi
           </span>
         </div>
 
-        <VideoTable
-          videos={filteredMyVideos}
-          onPreview={(url) => {
-            const target = videos.find(v => v.videoUrl === url)
-            if (target && onVideoClick) {
-              onVideoClick(target.id)
-            } else {
-              setPreviewUrl(url)
-              setPreviewOpen(true)
-            }
-          }}
-          onEdit={setPendingEditId}
-          onDelete={handleDelete}
-        />
+        {loading ? (
+          <div className="p-10 text-center text-gray-500">加载中...</div>
+        ) : (
+          <VideoTable
+            videos={filteredMyVideos as any} // Temporary cast until VideoTable updated
+            onPreview={(url) => {
+              const target = myVideos.find(v => v.video_path === url || v.video_path.endsWith(url.split('/').pop() || ''))
+              if (target && onVideoClick) {
+                onVideoClick(target.video_id)
+              } else {
+                setPreviewUrl(url)
+                setPreviewOpen(true)
+              }
+            }}
+            onEdit={setPendingEditId}
+            onDelete={handleDelete}
+          />
+        )}
     </div>
     {chartsPreviewOpen && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -123,12 +156,12 @@ export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVi
         confirmText="删除"
         cancelText="取消"
         onConfirm={async () => {
-          const target = videos.find(v => v.id === pendingDeleteId)
+          const target = myVideos.find(v => v.video_id === pendingDeleteId)
           if (target) {
-            await deleteVideoSvc(target.id)
+            await deleteVideoSvc(target.video_id)
           }
-          // 为即时用户体验进行本地移除
-          if (pendingDeleteId) deleteVideo(pendingDeleteId)
+          setMyVideos(prev => prev.filter(v => v.video_id !== pendingDeleteId))
+          deleteGlobalVideo(pendingDeleteId)
           
           setPendingDeleteId(null)
           toastSuccess('删除成功')
@@ -137,8 +170,37 @@ export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVi
       />
     )}
     {pendingEditId && (() => {
-      const target = videos.find(v => v.id === pendingEditId)
-      return target ? <EditVideoModal video={target} onClose={() => setPendingEditId(null)} /> : null
+      const target = myVideos.find(v => v.video_id === pendingEditId)
+      // Adapter for EditVideoModal
+      const adaptedVideo = target ? {
+        id: target.video_id,
+        uploaderId: target.uploader_id,
+        title: target.title,
+        description: target.description || '',
+        tags: target.tags || [],
+        videoUrl: target.video_path.startsWith('http') ? target.video_path : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/IdeaUploads/${target.video_path}`,
+        coverUrl: target.cover_path.startsWith('http') ? target.cover_path : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/IdeaUploads/${target.cover_path}`,
+        aspectRatio: target.aspect_ratio,
+        duration: target.duration,
+        is_public: target.is_public,
+        is_deleted: target.is_deleted,
+        createdAt: target.created_at,
+        updatedAt: target.updated_at,
+        viewCount: target.total_views,
+        likeCount: target.total_likes,
+        commentCount: target.total_comments,
+        isLiked: false // Default
+      } : null
+
+      return adaptedVideo ? (
+          <EditVideoModal 
+            video={adaptedVideo} 
+            onClose={() => {
+                setPendingEditId(null)
+                fetchVideos() 
+            }} 
+          />
+      ) : null
     })()}
     </>
   );

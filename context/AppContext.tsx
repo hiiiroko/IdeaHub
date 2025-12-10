@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { toUiVideo } from '@/services/adapters';
 import { toggleLikeVideo, sendComment, incrementViewCount, fetchLikesForVideos, fetchComments, fetchLikeStats, fetchLikeCountsForVideos, fetchViewCountsForVideos } from '@/services/interaction';
-import { fetchVideos } from '@/services/video';
+import { fetchVideos, fetchMyVideosWithStats } from '@/services/video';
 import { fetchRecentVideoGenerationTasks } from '@/services/videoGeneration';
 import type { VideoGenerationTask } from '@/types/video';
 import { User, Video, Comment, SortOption } from '@/types.ts';
@@ -81,6 +81,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const baseUiList = list.map(v => toUiVideo(v));
       let uiList = baseUiList;
 
+      // 如果当前用户已登录，且没有从公开列表获取到所有数据（或为了确保最新统计），尝试获取当前用户视频的详细统计信息
+      // 并合并到列表中，或者如果这是管理页面的话可能更倾向于在管理页面单独获取。
+      // 但为了保持全局状态的一致性，这里我们暂且不直接替换 uiList 为 fetchMyVideosWithStats 的结果，
+      // 因为 videos 是给首页用的公开视频列表。
+      // 
+      // 修正策略：AppContext 中的 videos 主要是「发现页」的数据源。
+      // 「管理页」的数据源之前是复用 videos 并 filter(uploaderId)，这会导致只能看到“已发布且在首页列表中”的视频。
+      // 实际上管理页应该能看到私密视频、已删除视频（如果未软删）等。
+      // 
+      // 用户需求是“管理页列表数据源切换”。
+      // 因此，我们需要在 AppContext 中提供一个新的状态或方法，或者让 Manage 页面自己去 fetch。
+      // 考虑到 AppContext 已经有点臃肿，且这个数据只属于管理页，
+      // 最佳实践是在 Manage.tsx 中使用 fetchMyVideosWithStats，而不是污染全局 videos。
+      // 
+      // 但是，Manage.tsx 目前依赖 useApp().videos。
+      // 方案 A：在 AppContext 增加 myVideos 状态。（改动较大）
+      // 方案 B：在 Manage.tsx 中独立获取数据，不再依赖 useApp().videos。
+      // 
+      // 考虑到用户指令是“管理页列表数据源切换”，我将采用方案 B。
+      // AppContext 保持负责全局发现页数据。
+      // Manage.tsx 将改为自己维护数据状态。
+      // 
+      // 不过，为了兼容 deleteVideo / updateVideo 等操作能同时更新全局列表（如果该视频也在发现页），
+      // 我们可能需要保留全局操作对 myVideos 的影响，或者在操作后刷新。
+      
       const videoIds = baseUiList.map(v => v.id);
       const likeMap = await fetchLikesForVideos(videoIds);
       if (Object.keys(likeMap).length > 0) {
