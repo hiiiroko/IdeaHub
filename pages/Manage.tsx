@@ -11,7 +11,7 @@ import { SortOption, TimeRange } from '../types';
 import DashboardCharts from '@/components/DashboardCharts';
 import { VideoTable } from '@/components/Manage/VideoTable';
 
-export const Manage: React.FC = () => {
+export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVideoClick }) => {
   const { currentUser, videos, deleteVideo } = useApp();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingEditId, setPendingEditId] = useState<string | null>(null);
@@ -87,7 +87,15 @@ export const Manage: React.FC = () => {
 
         <VideoTable
           videos={filteredMyVideos}
-          onPreview={(url) => { setPreviewUrl(url); setPreviewOpen(true) }}
+          onPreview={(url) => {
+            const target = videos.find(v => v.videoUrl === url)
+            if (target && onVideoClick) {
+              onVideoClick(target.id)
+            } else {
+              setPreviewUrl(url)
+              setPreviewOpen(true)
+            }
+          }}
           onEdit={setPendingEditId}
           onDelete={handleDelete}
         />
@@ -132,24 +140,6 @@ export const Manage: React.FC = () => {
       const target = videos.find(v => v.id === pendingEditId)
       return target ? <EditVideoModal video={target} onClose={() => setPendingEditId(null)} /> : null
     })()}
-    {previewOpen && previewUrl && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[85vh] overflow-hidden">
-          <button
-            onClick={() => { setPreviewOpen(false); setPreviewUrl('') }}
-            className="absolute top-3 right-3 z-10 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
-            aria-label="关闭预览"
-          >
-            ✕
-          </button>
-          <div className="max-h-[85vh] overflow-y-auto modal-scroll">
-            <div className="w-full bg-black flex items-center justify-center">
-              <video src={previewUrl} controls autoPlay className="w-full h-full max-h-[80vh] object-contain" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
     </>
   );
 };

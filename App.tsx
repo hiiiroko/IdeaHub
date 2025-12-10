@@ -50,7 +50,7 @@ const AppContent: React.FC = () => {
           />
         )}
         {page === 'manage' && (
-          <Manage />
+          <Manage onVideoClick={setSelectedVideoId} />
         )}
       </main>
 
