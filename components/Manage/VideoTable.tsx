@@ -5,7 +5,7 @@
 import React from 'react'
 
 import { VideoWithEngagementStats } from '../../types/index'
-import { EditIcon, TrashIcon, PlayIcon, EyeIcon, HeartIcon, CommentIcon } from '../Icons'
+import { EditIcon, TrashIcon, PlayIcon, EyeIcon, HeartIcon, CommentIcon, FireIcon } from '../Icons'
 
 interface VideoTableProps {
   videos: VideoWithEngagementStats[]
@@ -27,6 +27,7 @@ export const VideoTable: React.FC<VideoTableProps> = ({
           <thead className="bg-gray-50 dark:bg-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">视频</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">热度</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">观看</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">点赞</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论</th>
@@ -89,6 +90,12 @@ export const VideoTable: React.FC<VideoTableProps> = ({
                       </div>
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                    <FireIcon className="w-3.5 h-3.5 text-gray-400" /> 
+                    {typeof video.hot_score === 'number' ? video.hot_score.toFixed(1) : '-'}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">

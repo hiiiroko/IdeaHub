@@ -33,7 +33,7 @@ export const VideoGenerateForm: React.FC<VideoGenerateFormProps> = ({
           onChange={(e)=>setParams({ ...params, prompt: e.target.value })}
           disabled={generating || saving}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors"
-          placeholder="例如：夏日海滩·慢动作·轻快背景乐·广告片风格"
+          placeholder="例如：一只小狗趴在枕头上撒娇"
         />
       </div>
 

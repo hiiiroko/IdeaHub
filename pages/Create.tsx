@@ -8,6 +8,7 @@ import { useVideoGeneration } from '../hooks/useVideoGeneration';
 import { toUiVideo } from '../services/adapters';
 import { parseTags, toastError } from '../services/utils';
 import { uploadVideo, fetchVideoById, updateVideoAspectRatio } from '../services/video';
+import { fetchRecentVideoGenerationTasks } from '../services/videoGeneration';
 import { Video } from '../types';
 import { getVideoDuration, getImageAspectRatioFromUrl, captureFirstFrame } from '../utils/media';
 import { notifySuccess } from '../utils/notify';
@@ -15,7 +16,7 @@ import { notifySuccess } from '../utils/notify';
 type AiPrefill = { taskId: string; videoUrl: string; coverUrl: string | null }
 
 export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | null; onAiPrefillConsumed?: () => void }> = ({ onComplete, aiPrefill, onAiPrefillConsumed }) => {
-  const { currentUser, addVideo, updateVideo } = useApp();
+  const { currentUser, addVideo, updateVideo, setGenerationTasks } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   // 进度统一由 useUploadVideo 提供
@@ -67,6 +68,7 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
       if (aiPrefill?.coverUrl) {
         setPreviewLoadingCover(true)
       }
+      getVideoDuration(aiPrefill.videoUrl).then(d => setDurationPreview(d)).catch(() => setDurationPreview(null))
       setFiles(prev => ({ ...prev, video: null }))
       onAiPrefillConsumed?.()
     }
@@ -167,6 +169,13 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
             updateVideo(dbVideo.id, { aspectRatio: ratio })
           } catch {}
         }
+        
+        // 刷新 AI 任务列表，确保状态同步
+        if (currentUser) {
+          fetchRecentVideoGenerationTasks(currentUser.id).then(tasks => {
+            setGenerationTasks(tasks)
+          }).catch(console.error)
+        }
       }
       succeeded = true;
     } catch (err) {
@@ -184,6 +193,7 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
     setAiTaskId(result.taskId)
     setAiGenerating(false)
     setPreviews(prev => ({ ...prev, video: result.videoUrl }))
+    getVideoDuration(result.videoUrl).then(d => setDurationPreview(d)).catch(() => setDurationPreview(null))
     setPreviewLoadingVideo(true)
     
     setFiles(prev => ({ ...prev, video: null })) // Clear manual video file
@@ -328,7 +338,7 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
                     value={form.title}
                     onChange={(e) => setForm({...form, title: e.target.value})}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
-                    placeholder="示例：暑期活动方案 V1"
+                    placeholder="示例：冬日锅物推荐"
                 />
             </div>
 
@@ -350,47 +360,50 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
                     value={form.tags}
                     onChange={(e) => setForm({...form, tags: e.target.value})}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
-                    placeholder="用逗号分隔：3D、搞笑、推广"
+                    placeholder="用符号分隔：AIGC、搞笑、推广"
                 />
             </div>
         </div>
 
-        <div className="pt-4 flex justify-end gap-3">
-            <button 
-                type="button" 
-                onClick={onComplete}
-                disabled={isSubmitting}
-                className="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-            >
-                取消
-            </button>
-            <button 
-                type="submit" 
-                disabled={
-                  isSubmitting ||
-                  !form.title ||
-                  (!files.video && !aiTaskId) || // Allow if aiTaskId is present
-                  (!files.cover && !aiTaskId) || // Allow if aiTaskId is present (backend handles cover)
-                  !currentUser ||
-                  invalid.video ||
-                  invalid.cover
-                }
-                className="px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-2"
+        <div className="pt-4 flex items-center justify-between gap-4">
+            <div className="flex-1 mr-4 max-w-sm">
+              {(isSubmitting || loading) && (
+                <div className="text-sm w-full">
+                  <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full w-full rounded-full wave-progress"></div>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>{aiTaskId ? '正在发布...' : '正在上传...'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 flex-shrink-0">
+              <button 
+                  type="button" 
+                  onClick={onComplete}
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
-                {isSubmitting || loading ? '正在上传…' : '发布视频'}
+                  取消
               </button>
+              <button 
+                  type="submit" 
+                  disabled={
+                    isSubmitting ||
+                    !form.title ||
+                    (!files.video && !aiTaskId) || // Allow if aiTaskId is present
+                    (!files.cover && !aiTaskId) || // Allow if aiTaskId is present (backend handles cover)
+                    !currentUser ||
+                    invalid.video ||
+                    invalid.cover
+                  }
+                  className="px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-2"
+                >
+                  {isSubmitting || loading ? '正在上传…' : '发布视频'}
+                </button>
+            </div>
         </div>
-        {(isSubmitting || loading) && (
-          <div className="absolute left-8 bottom-6 text-sm w-[280px] md:w-[360px]">
-            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div className="h-2 bg-primary rounded-full transition-all" style={{ width: `${progress}%` }}></div>
-            </div>
-            <div className="mt-2 flex items-center justify-between text-gray-600 dark:text-gray-400">
-              <span>正在上传…</span>
-              <span>{Math.floor(progress)}%</span>
-            </div>
-          </div>
-        )}
       </form>
       {previewOpen && previews.video && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -424,6 +437,15 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
       .ai-solid-btn{position:absolute;overflow:hidden;border-radius:0.375rem;color:#fff;background:var(--color-primary);box-shadow:0 0 0 1px rgba(0,0,0,.1);transition:background-color .2s ease}
       .ai-solid-btn:hover{background:var(--color-primary-hover)}
       .ai-solid-btn:disabled{filter:brightness(0.75);cursor:not-allowed}
+      .wave-progress {
+        background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%);
+        background-size: 200% 100%;
+        animation: waveProgress 1.5s linear infinite;
+      }
+      @keyframes waveProgress {
+        0% { background-position: 100% 0; }
+        100% { background-position: -100% 0; }
+      }
       `}</style>
       <VideoGenerateModal open={aiOpen} onClose={() => setAiOpen(false)} onSaved={onAiSaved} onStart={(p)=>{ setAiGenerating(true) }} onReset={()=> setAiGenerating(false)} />
     </div>

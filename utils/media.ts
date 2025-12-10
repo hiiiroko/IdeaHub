@@ -3,17 +3,26 @@
  */
 
 /**
- * Get the duration of a video file in seconds
+ * Get the duration of a video file or URL in seconds
  */
-export const getVideoDuration = (file: File): Promise<number> => {
+export const getVideoDuration = (source: File | string): Promise<number> => {
   return new Promise((resolve) => {
     const element = document.createElement('video')
     element.preload = 'metadata'
     element.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(element.src)
+      if (typeof source !== 'string') {
+        window.URL.revokeObjectURL(element.src)
+      }
       resolve(Math.round(element.duration))
     }
-    element.src = window.URL.createObjectURL(file)
+    element.onerror = () => {
+      resolve(0)
+    }
+    if (typeof source === 'string') {
+      element.src = source
+    } else {
+      element.src = window.URL.createObjectURL(source)
+    }
   })
 }
 

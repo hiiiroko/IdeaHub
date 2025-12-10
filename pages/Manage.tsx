@@ -10,6 +10,7 @@ import { SortOption, TimeRange } from '../types';
 import type { VideoWithEngagementStats } from '../types/index';
 
 import DashboardCharts from '@/components/DashboardCharts';
+import { TableSkeleton } from '@/components/Manage/TableSkeleton';
 import { VideoTable } from '@/components/Manage/VideoTable';
 
 export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVideoClick }) => {
@@ -98,7 +99,7 @@ export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVi
           onTimeRangeChange={setTimeRange}
           onSortChange={setSort}
           onSearchChange={setSearch}
-          showDivider={false}
+          showDivider={true}
         />
 
         <div className="flex items-center gap-3 mb-6">
@@ -115,7 +116,7 @@ export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVi
         </div>
 
         {loading ? (
-          <div className="p-10 text-center text-gray-500">加载中...</div>
+          <TableSkeleton rows={5} />
         ) : (
           <VideoTable
             videos={filteredMyVideos as any} // Temporary cast until VideoTable updated
