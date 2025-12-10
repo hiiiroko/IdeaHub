@@ -12,7 +12,6 @@ interface VideoCardProps {
 
 export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
   const [tilt, setTilt] = useState<string>('')
-  const [shadow, setShadow] = useState<string>('0 6px 20px rgba(0,0,0,0.08)')
   const [lightPos, setLightPos] = useState<{x:number;y:number}>({ x: 0, y: 0 })
   const [coverLoaded, setCoverLoaded] = useState(false)
   const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = (e) => {
@@ -26,22 +25,18 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
     const rx = -mdy * 12
     const ry = mdx * 12
     setTilt(`perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(8px) scale(1.03)`)
-    const sx = -mdx * 20
-    const sy = -mdy * 20
-    setShadow(`${sx}px ${sy}px 30px rgba(0,0,0,0.18)`)
     setLightPos({ x: rect.width - x, y: rect.height - y })
   }
   const handleMouseLeave = () => {
     setTilt('perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(0) scale(1)')
-    setShadow('0 6px 20px rgba(0,0,0,0.08)')
   }
   return (
     <div 
-        className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg cursor-pointer break-inside-avoid transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
+        className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm cursor-pointer break-inside-avoid transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
         onClick={onClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        style={{ transform: tilt, boxShadow: shadow, transition: 'transform 150ms cubic-bezier(0.2, 0.6, 0.2, 1), box-shadow 150ms ease, background-color 500ms cubic-bezier(0.2, 0.6, 0.2, 1), border-color 500ms cubic-bezier(0.2, 0.6, 0.2, 1)', willChange: 'transform', transformStyle: 'preserve-3d' }}
+        style={{ transform: tilt, transition: 'transform 150ms cubic-bezier(0.2, 0.6, 0.2, 1), background-color 500ms cubic-bezier(0.2, 0.6, 0.2, 1), border-color 500ms cubic-bezier(0.2, 0.6, 0.2, 1)', willChange: 'transform', transformStyle: 'preserve-3d' }}
     >
       {/* 缩略图容器 - 使用 aspect-ratio 预留高度 */}
       <div className="relative bg-gray-100 dark:bg-gray-700 overflow-hidden" style={{ aspectRatio: video.aspectRatio }}>

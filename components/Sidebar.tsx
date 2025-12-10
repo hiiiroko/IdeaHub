@@ -199,14 +199,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onReq
               ref={el => { btnRefs.current[item.id] = el }}
               onClick={() => {
                 if ((item.id === 'create' || item.id === 'manage') && !currentUser) {
+                  if (isAuthLoading) return
                   onRequireAuth && onRequireAuth();
                 } else {
                   onNavigate(item.id);
                 }
               }}
+              disabled={(item.id === 'create' || item.id === 'manage') && !currentUser && isAuthLoading}
               className={`relative z-10 w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
                 isActive ? 'text-primary' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-              }`}
+              } ${(item.id === 'create' || item.id === 'manage') && !currentUser && isAuthLoading ? 'opacity-50 cursor-wait' : ''}`}
             >
               <item.icon className={`w-5 h-5 transition-colors duration-200 ${isActive ? 'text-primary' : 'text-gray-400 dark:text-gray-500'}`} />
               {item.label}
