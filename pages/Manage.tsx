@@ -75,12 +75,12 @@ export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVi
         <div className="flex items-center gap-3 mb-6">
           <button
             type="button"
-            className="px-3 py-1 rounded-full text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
+            className="px-3 py-1 rounded-full text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]"
             onClick={() => setChartsPreviewOpen(true)}
           >
             查看视图
           </button>
-          <span className="bg-blue-100 dark:bg-blue-900/20 text-primary px-3 py-1 rounded-full text-sm font-medium">
+          <span className="bg-blue-100 dark:bg-blue-900/20 text-primary px-3 py-1 rounded-full text-sm font-medium transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
             {filteredMyVideos.length} 条结果
           </span>
         </div>

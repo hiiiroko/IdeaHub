@@ -228,9 +228,7 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
                             <video src={previews.video} className="h-full max-w-full object-contain rounded-lg" onLoadedData={() => setPreviewLoadingVideo(false)} />
                             {typeof previewLoadingVideo !== 'undefined' && previewLoadingVideo && (
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="aigc-skeleton w-11/12 h-5/6 rounded-lg flex items-center justify-center">
-                                  <div className="aigc-spinner"></div>
-                                </div>
+                                <div className="h-8 w-8 rounded-full border-2 border-primary/70 border-t-transparent animate-spin" />
                               </div>
                             )}
                             <div className="absolute inset-0 bg-black/0 pointer-events-none opacity-0 group-hover:opacity-100 flex items-center justify-center">
@@ -299,9 +297,7 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
                             <img src={previews.cover} className="h-full max-w-full object-cover rounded-lg" alt="preview" onLoad={() => setPreviewLoadingCover(false)} />
                             {typeof previewLoadingCover !== 'undefined' && previewLoadingCover && (
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="aigc-skeleton w-11/12 h-5/6 rounded-lg flex items-center justify-center">
-                                  <div className="aigc-spinner"></div>
-                                </div>
+                                <div className="h-8 w-8 rounded-full border-2 border-primary/70 border-t-transparent animate-spin" />
                               </div>
                             )}
                          </div>
@@ -425,9 +421,6 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
       .aigc-btn:disabled::before{filter:brightness(0.85)}
       .aigc-btn:disabled{cursor:not-allowed}
       @keyframes aigcFlow{0%{background-position:0% 0%}100%{background-position:200% 0%}}
-      .aigc-skeleton{width:100%;max-width:420px;background:linear-gradient(90deg,rgba(35, 172, 193, 0.25),rgba(239,68,68,.25),rgba(35, 172, 193, 0.25));background-size:200% 100%;animation:aigcFlow 2s linear infinite}
-      .aigc-spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.6);border-top-color:#22d3ee;border-right-color:#ef4444;border-radius:50%;animation:spin 1s linear infinite}
-      @keyframes spin{to{transform:rotate(360deg)}}
       .ai-solid-btn{position:absolute;overflow:hidden;border-radius:0.375rem;color:#fff;background:var(--color-primary);box-shadow:0 0 0 1px rgba(0,0,0,.1);transition:background-color .2s ease}
       .ai-solid-btn:hover{background:var(--color-primary-hover)}
       .ai-solid-btn:disabled{filter:brightness(0.75);cursor:not-allowed}

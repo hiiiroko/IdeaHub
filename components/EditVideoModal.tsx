@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 
 import { useApp } from '../context/AppContext'
-import { parseTags } from '../services/utils'
+import { parseTags, toastSuccess } from '../services/utils'
 import { updateVideo as updateVideoSvc } from '../services/video'
 import type { Video } from '../types'
 
@@ -24,6 +24,7 @@ export const EditVideoModal: React.FC<{ video: Video; onClose: () => void }> = (
       }
       await updateVideoSvc(video.id, updates)
       updateVideo(video.id, updates)
+      toastSuccess('保存成功')
       onClose()
     } finally {
       setWorking(false)
