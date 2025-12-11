@@ -5,6 +5,7 @@ import { AuthModal } from './components/AuthModal';
 import { Sidebar } from './components/Sidebar';
 import { AppProvider } from './context/AppContext';
 import { useApp } from './context/AppContext';
+import { VideoCreationProvider } from './context/VideoCreationContext';
 import { Create } from './pages/Create';
 import { Detail } from './pages/Detail';
 import { Discovery } from './pages/Discovery';
@@ -72,8 +73,10 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AppProvider>
-      <AppContent />
-      <Toaster position="top-center" />
+      <VideoCreationProvider>
+        <AppContent />
+        <Toaster position="top-center" />
+      </VideoCreationProvider>
     </AppProvider>
   );
 };

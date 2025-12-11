@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { VideoGenerateModal } from '../components/AI/VideoGenerateModal';
 import { UploadIcon, PlayIcon } from '../components/Icons';
 import { useApp } from '../context/AppContext';
+import { useVideoCreation } from '../context/VideoCreationContext';
 import { useUploadVideo } from '../hooks/useUploadVideo';
 import { useVideoGeneration } from '../hooks/useVideoGeneration';
 import { toUiVideo } from '../services/adapters';
@@ -17,43 +18,32 @@ type AiPrefill = { taskId: string; videoUrl: string; coverUrl: string | null }
 
 export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | null; onAiPrefillConsumed?: () => void }> = ({ onComplete, aiPrefill, onAiPrefillConsumed }) => {
   const { currentUser, addVideo, updateVideo, setGenerationTasks } = useApp();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Use global video creation state
+  const {
+    form, setForm,
+    files, setFiles,
+    previews, setPreviews,
+    invalid, setInvalid,
+    isSubmitting, setIsSubmitting,
+    aiTaskId, setAiTaskId,
+    durationPreview, setDurationPreview,
+    previewLoadingVideo, setPreviewLoadingVideo,
+    previewLoadingCover, setPreviewLoadingCover,
+    reset
+  } = useVideoCreation();
+
   const [previewOpen, setPreviewOpen] = useState(false);
   // 进度统一由 useUploadVideo 提供
   
   const { publish } = useVideoGeneration();
   const { upload, progress, loading } = useUploadVideo();
-
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    tags: '',
-  });
   
-  const [files, setFiles] = useState<{ video: File | null; cover: File | null }>({
-    video: null,
-    cover: null,
-  });
-
-  const [invalid, setInvalid] = useState<{ video: boolean; cover: boolean }>({
-    video: false,
-    cover: false,
-  })
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiGenerating, setAiGenerating] = useState(false)
 
   const MAX_VIDEO_SIZE = 15 * 1024 * 1024
   const MAX_COVER_SIZE = 3 * 1024 * 1024
-
-  const [previews, setPreviews] = useState<{ video: string; cover: string }>({
-    video: '',
-    cover: '',
-  });
-  const [durationPreview, setDurationPreview] = useState<number | null>(null)
-  const [previewLoadingVideo, setPreviewLoadingVideo] = useState(false)
-  const [previewLoadingCover, setPreviewLoadingCover] = useState(false)
-
-  const [aiOpen, setAiOpen] = useState(false)
-  const [aiTaskId, setAiTaskId] = useState('')
-  const [aiGenerating, setAiGenerating] = useState(false)
 
   useEffect(() => {
     if (aiPrefill?.taskId && aiPrefill.videoUrl) {
@@ -185,6 +175,7 @@ export const Create: React.FC<{ onComplete: () => void; aiPrefill?: AiPrefill | 
     }
     setIsSubmitting(false);
     if (succeeded) {
+      reset(); // Clear form on success
       onComplete();
     }
   };
