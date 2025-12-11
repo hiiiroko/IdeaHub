@@ -57,7 +57,7 @@ export const Discovery: React.FC<{ onVideoClick: (id: string) => void }> = ({ on
     // 3. Sort
     result.sort((a, b) => {
       if (sort === SortOption.MOST_LIKED) return b.likeCount - a.likeCount;
-      if (sort === SortOption.MOST_VIEWED) return b.viewCount - a.viewCount;
+      if (sort === SortOption.MOST_VIEWED) return (b.hot_score ?? b.viewCount ?? 0) - (a.hot_score ?? a.viewCount ?? 0);
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 

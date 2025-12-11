@@ -28,8 +28,6 @@ export const fetchVideos = async (
 
   if (sortBy === 'latest') {
     baseQuery = baseQuery.order('created_at', { ascending: false })
-  } else if (sortBy === 'popular') {
-    baseQuery = baseQuery.order('created_at', { ascending: false })
   }
 
   baseQuery = baseQuery.range(offset, offset + limit - 1)
@@ -59,7 +57,7 @@ export const fetchVideos = async (
   const statsMap = new Map<string, VideoWithEngagementStats>()
   ;(statsData || []).forEach((item) => statsMap.set(item.video_id, item))
 
-  return videos.map((video) => {
+  const merged = videos.map((video) => {
     const stats = statsMap.get(video.id)
     if (!stats) return video
     return {
@@ -70,6 +68,12 @@ export const fetchVideos = async (
       hot_score: stats.hot_score,
     }
   })
+
+  if (sortBy === 'popular') {
+    return merged.sort((a, b) => (b.hot_score ?? b.view_count ?? 0) - (a.hot_score ?? a.view_count ?? 0))
+  }
+
+  return merged
 }
 
 export const fetchMyVideosWithStats = async (userId: string): Promise<import('../types/index.ts').VideoWithEngagementStats[]> => {
