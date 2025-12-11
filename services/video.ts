@@ -2,7 +2,7 @@ import toast from 'react-hot-toast'
 import { v4 as uuidv4 } from 'uuid'
 
 import { supabase } from '../lib/supabase'
-import type { Video as DbVideo } from '../types/index.ts'
+import type { Video as DbVideo, VideoWithEngagementStats } from '../types/index.ts'
 import { getVideoDuration, getImageAspectRatio } from '../utils/media'
 
 const BUCKET = (import.meta.env.VITE_SUPABASE_BUCKET as string) || 'IdeaUploads'
@@ -13,7 +13,7 @@ export const fetchVideos = async (
   offset: number = 0,
   limit: number = 20
 ): Promise<DbVideo[]> => {
-  let query = supabase
+  let baseQuery = supabase
     .from('videos')
     .select(`
       *,
@@ -23,28 +23,53 @@ export const fetchVideos = async (
     .eq('is_deleted', false)
 
   if (searchKeyword) {
-    query = query.or(`title.ilike.%${searchKeyword}%, tags.cs.{${searchKeyword}}`)
+    baseQuery = baseQuery.or(`title.ilike.%${searchKeyword}%, tags.cs.{${searchKeyword}}`)
   }
 
   if (sortBy === 'latest') {
-    query = query.order('created_at', { ascending: false })
+    baseQuery = baseQuery.order('created_at', { ascending: false })
   } else if (sortBy === 'popular') {
-    // Note: view_count might not be on the table directly or sortable this way if it's separate.
-    // User said: "点赞、观看事件有独立表... 前端只通过 RPC/统计".
-    // For now, we might fall back to created_at or if there is a view/column added.
-    // Assuming for now we can't easily sort by popular unless we have a materialized view or counter column.
-    // If the schema user provided (Video interface) doesn't have view_count, we can't sort by it directly on 'videos' table.
-    // I will default to created_at for now to avoid error, or check if view_count exists.
-    // The user's interface for Video DOES NOT have view_count.
-    // I will comment this out or fallback to created_at.
-    query = query.order('created_at', { ascending: false })
+    baseQuery = baseQuery.order('created_at', { ascending: false })
   }
 
-  query = query.range(offset, offset + limit - 1)
+  baseQuery = baseQuery.range(offset, offset + limit - 1)
 
-  const { data, error } = await query
+  const { data: baseVideos, error } = await baseQuery
   if (error) throw error
-  return data as unknown as DbVideo[]
+
+  const videos = (baseVideos as unknown as DbVideo[]) || []
+  const videoIds = videos.map(v => v.id)
+
+  if (videoIds.length === 0) {
+    return videos
+  }
+
+  const { data: statsData, error: statsError } = await supabase
+    .from('video_with_engagement_stats')
+    .select('*')
+    .eq('is_public', true)
+    .eq('is_deleted', false)
+    .in('video_id', videoIds)
+
+  if (statsError) {
+    console.error('Error fetching video engagement stats list:', statsError)
+    return videos
+  }
+
+  const statsMap = new Map<string, VideoWithEngagementStats>()
+  ;(statsData || []).forEach((item) => statsMap.set(item.video_id, item))
+
+  return videos.map((video) => {
+    const stats = statsMap.get(video.id)
+    if (!stats) return video
+    return {
+      ...video,
+      view_count: stats.total_views,
+      like_count: stats.total_likes,
+      comment_count: stats.total_comments,
+      hot_score: stats.hot_score,
+    }
+  })
 }
 
 export const fetchMyVideosWithStats = async (userId: string): Promise<import('../types/index.ts').VideoWithEngagementStats[]> => {

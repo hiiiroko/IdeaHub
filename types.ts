@@ -30,6 +30,7 @@ export interface Video {
   viewCount: number;
   likeCount: number;
   commentCount: number;
+  hot_score?: number;
   createdAt: string;
   updatedAt: string;
   uploaderId: string;

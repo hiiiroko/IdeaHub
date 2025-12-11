@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Video } from '../types';
 
 import { FakeAvatar } from './FakeAvatar';
-import { HeartIcon, PlayIcon } from './Icons';
+import { FireIcon, HeartIcon, PlayIcon } from './Icons';
 
 interface VideoCardProps {
   video: Video;
@@ -40,6 +40,12 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
     >
       {/* 缩略图容器 - 使用 aspect-ratio 预留高度 */}
       <div className="relative bg-gray-100 dark:bg-gray-700 overflow-hidden" style={{ aspectRatio: video.aspectRatio }}>
+        {typeof video.hot_score === 'number' && (
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30">
+            <FireIcon className="w-3.5 h-3.5 text-orange-500" />
+            <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">{video.hot_score.toFixed(1)}</span>
+          </div>
+        )}
         {!coverLoaded && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="h-8 w-8 rounded-full border-2 border-white/70 border-t-transparent animate-spin" />
