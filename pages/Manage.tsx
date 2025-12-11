@@ -71,15 +71,9 @@ export const Manage: React.FC<{ onVideoClick?: (id: string) => void }> = ({ onVi
     }
     result.sort((a, b) => {
       if (sort === SortOption.MOST_LIKED) return b.total_likes - a.total_likes
-      if (sort === SortOption.MOST_VIEWED) return b.total_views - a.total_views
+      if (sort === SortOption.MOST_VIEWED) return (b.hot_score ?? b.total_views ?? 0) - (a.hot_score ?? a.total_views ?? 0)
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
-    // Fix sorting direction for numbers
-    if (sort === SortOption.MOST_LIKED) {
-       result.sort((a, b) => b.total_likes - a.total_likes)
-    } else if (sort === SortOption.MOST_VIEWED) {
-       result.sort((a, b) => b.total_views - a.total_views)
-    }
 
     return result
   }, [myVideos, search, timeRange, sort])

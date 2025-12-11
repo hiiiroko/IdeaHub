@@ -2,7 +2,7 @@ import React from 'react'
 
 import { User, Video } from '../../types'
 import { FakeAvatar } from '../FakeAvatar'
-import { EyeIcon, HeartIcon, FireIcon } from '../Icons'
+import { HeartIcon } from '../Icons'
 
 interface VideoInfoProps {
   video: Video
@@ -21,12 +21,6 @@ export const VideoInfo: React.FC<VideoInfoProps> = ({
     <div className="p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-500 ease-[cubic-bezier(0.2,0.6,0.2,1)]">
       <div className="flex items-center gap-2 mb-4">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex-1">{video.title}</h1>
-        {typeof video.hot_score === 'number' && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30">
-            <FireIcon className="w-3.5 h-3.5 text-orange-500" />
-            <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">{video.hot_score.toFixed(1)}</span>
-          </div>
-        )}
       </div>
 
       <div className="flex items-center justify-between mb-6">
